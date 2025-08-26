@@ -24,7 +24,7 @@ const createTransporter = () => {
         passLength: config.auth.pass ? config.auth.pass.length : 0
     });
 
-    return nodemailer.createTransport(config);
+    return nodemailer.createTransporter(config);
 };
 
 // Test email configuration

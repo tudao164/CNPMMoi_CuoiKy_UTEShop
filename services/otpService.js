@@ -32,8 +32,13 @@ class OTPService {
                 [userId, otpCode, OTP_TYPES.REGISTER, expiresAt]
             );
 
-            // Send OTP email
-            await emailService.sendRegistrationOTP(email, fullName, otpCode);
+            // Send OTP email (don't fail if email sending fails)
+            try {
+                await emailService.sendRegistrationOTP(email, fullName, otpCode);
+            } catch (emailError) {
+                console.warn('⚠️ Email sending failed, but OTP was created:', emailError.message);
+                // Continue execution - user can still use OTP from database/logs
+            }
 
             console.log(`✅ Registration OTP created for user ${userId}: ${otpCode}`);
             return { otpId, otpCode, expiresAt };
@@ -59,8 +64,13 @@ class OTPService {
                 [userId, otpCode, OTP_TYPES.RESET_PASSWORD, expiresAt]
             );
 
-            // Send OTP email
-            await emailService.sendPasswordResetOTP(email, fullName, otpCode);
+            // Send OTP email (don't fail if email sending fails)
+            try {
+                await emailService.sendPasswordResetOTP(email, fullName, otpCode);
+            } catch (emailError) {
+                console.warn('⚠️ Email sending failed, but OTP was created:', emailError.message);
+                // Continue execution - user can still use OTP from database/logs
+            }
 
             console.log(`✅ Password reset OTP created for user ${userId}: ${otpCode}`);
             return { otpId, otpCode, expiresAt };
