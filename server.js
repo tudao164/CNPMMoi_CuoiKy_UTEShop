@@ -13,6 +13,8 @@ const { generalLimiter } = require('./middleware/rateLimiter');
 // Import routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
+const productRoutes = require('./routes/products');
+const orderRoutes = require('./routes/orders');
 
 // Import utilities
 const { errorResponse } = require('./utils/responseHelper');
@@ -57,6 +59,8 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/orders', orderRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -68,6 +72,8 @@ app.get('/', (req, res) => {
         endpoints: {
             auth: '/api/auth',
             user: '/api/user',
+            products: '/api/products',
+            orders: '/api/orders',
             health: '/health'
         },
         timestamp: new Date().toISOString()
@@ -100,6 +106,28 @@ app.get('/api/docs', (req, res) => {
                 getUserOTPs: 'GET /api/user/otps',
                 deleteAccount: 'DELETE /api/user/account',
                 updateEmail: 'POST /api/user/update-email'
+            },
+            products: {
+                getHomePageData: 'GET /api/products/home',
+                getAllProducts: 'GET /api/products',
+                getProductById: 'GET /api/products/:id',
+                getLatestProducts: 'GET /api/products/latest',
+                getBestSellingProducts: 'GET /api/products/best-selling',
+                getMostViewedProducts: 'GET /api/products/most-viewed',
+                getHighestDiscountProducts: 'GET /api/products/highest-discount',
+                searchProducts: 'GET /api/products/search',
+                getProductsByCategory: 'GET /api/products/categories/:categoryId/products',
+                getRelatedProducts: 'GET /api/products/:id/related',
+                getAllCategories: 'GET /api/products/categories',
+                getCategoryById: 'GET /api/products/categories/:id'
+            },
+            orders: {
+                createOrder: 'POST /api/orders',
+                getUserOrders: 'GET /api/orders',
+                getOrderById: 'GET /api/orders/:id',
+                getUserOrderStats: 'GET /api/orders/stats',
+                cancelOrder: 'PATCH /api/orders/:id/cancel',
+                updateOrderStatus: 'PATCH /api/orders/:id/status'
             },
             utilities: {
                 health: 'GET /health',

@@ -33,12 +33,13 @@ class UserController {
     async updateProfile(req, res) {
         try {
             const userId = req.user.id;
-            const { full_name, phone } = req.body;
+            const { full_name, phone, avatar_url } = req.body;
 
             // Prepare update data
             const updateData = {};
             if (full_name !== undefined) updateData.full_name = full_name;
             if (phone !== undefined) updateData.phone = phone;
+            if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
 
             // Check if there's anything to update
             if (Object.keys(updateData).length === 0) {

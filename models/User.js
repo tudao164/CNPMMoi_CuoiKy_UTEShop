@@ -8,6 +8,7 @@ class User {
         this.password = userData.password;
         this.full_name = userData.full_name;
         this.phone = userData.phone;
+        this.avatar_url = userData.avatar_url;
         this.is_verified = userData.is_verified;
         this.created_at = userData.created_at;
         this.updated_at = userData.updated_at;
@@ -43,7 +44,7 @@ class User {
     static async findById(id) {
         try {
             const userData = await getOne(
-                'SELECT id, email, full_name, phone, is_verified, created_at, updated_at FROM users WHERE id = ?',
+                'SELECT id, email, full_name, phone, avatar_url, is_verified, created_at, updated_at FROM users WHERE id = ?',
                 [id]
             );
             return userData ? new User(userData) : null;
@@ -57,7 +58,7 @@ class User {
     static async findByEmail(email) {
         try {
             const userData = await getOne(
-                'SELECT id, email, full_name, phone, is_verified, created_at, updated_at FROM users WHERE email = ?',
+                'SELECT id, email, full_name, phone, avatar_url, is_verified, created_at, updated_at FROM users WHERE email = ?',
                 [email]
             );
             return userData ? new User(userData) : null;
@@ -126,10 +127,10 @@ class User {
     // Update user profile
     static async updateProfile(userId, profileData) {
         try {
-            const { full_name, phone } = profileData;
+            const { full_name, phone, avatar_url } = profileData;
             await executeQuery(
-                'UPDATE users SET full_name = ?, phone = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-                [full_name, phone, userId]
+                'UPDATE users SET full_name = ?, phone = ?, avatar_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                [full_name, phone, avatar_url, userId]
             );
             return await User.findById(userId);
         } catch (error) {
@@ -186,7 +187,7 @@ class User {
 
             // Get users
             const users = await executeQuery(
-                `SELECT id, email, full_name, phone, is_verified, created_at, updated_at 
+                `SELECT id, email, full_name, phone, avatar_url, is_verified, created_at, updated_at 
                  FROM users 
                  ORDER BY created_at DESC 
                  LIMIT ? OFFSET ?`,
@@ -223,7 +224,7 @@ class User {
 
             // Get users
             const users = await executeQuery(
-                `SELECT id, email, full_name, phone, is_verified, created_at, updated_at 
+                `SELECT id, email, full_name, phone, avatar_url, is_verified, created_at, updated_at 
                  FROM users 
                  WHERE email LIKE ? OR full_name LIKE ?
                  ORDER BY created_at DESC 

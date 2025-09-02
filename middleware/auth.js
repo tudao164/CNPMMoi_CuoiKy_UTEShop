@@ -161,6 +161,7 @@ module.exports = {
     generateToken,
     refreshToken,
     optionalAuthentication,
+    optionalAuth: optionalAuthentication, // alias for easier import
     checkResourceOwnership,
     requireAdmin
 };

@@ -12,10 +12,12 @@
 
 1. [Authentication Endpoints](#authentication-endpoints)
 2. [User Management Endpoints](#user-management-endpoints)
-3. [Utility Endpoints](#utility-endpoints)
-4. [Cách sử dụng và Test](#cách-sử-dụng-và-test)
-5. [Response Format](#response-format)
-6. [Error Codes](#error-codes)
+3. [Product Endpoints](#product-endpoints)
+4. [Order Endpoints](#order-endpoints)
+5. [Utility Endpoints](#utility-endpoints)
+6. [Cách sử dụng và Test](#cách-sử-dụng-và-test)
+7. [Response Format](#response-format)
+8. [Error Codes](#error-codes)
 
 ---
 
@@ -213,7 +215,7 @@
 
 ### 7. Kiểm tra trạng thái đăng nhập
 
-**Endpoint:** `GET /api/auth/me`
+**Endpoint:** `GET  `
 **Description:** Kiểm tra token và lấy thông tin user hiện tại
 **Authentication:** Required
 
@@ -302,7 +304,8 @@ Authorization: Bearer <your-jwt-token>
 ```json
 {
   "full_name": "Nguyen Van B",
-  "phone": "0987654321"
+  "phone": "0987654321",
+  "avatar_url": "https://example.com/avatar.jpg"
 }
 ```
 
@@ -439,7 +442,310 @@ Authorization: Bearer <your-jwt-token>
 
 ---
 
-## 🛠 Utility Endpoints
+## �️ Product Endpoints
+
+### 1. Lấy dữ liệu trang chủ
+
+**Endpoint:** `GET /api/products/home`
+**Description:** Lấy tất cả dữ liệu cho trang chủ: 8 sản phẩm mới nhất, 6 sản phẩm bán chạy, 8 sản phẩm được xem nhiều, 4 sản phẩm khuyến mãi cao nhất
+
+**Response Success (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "latest_products": [...],
+    "best_selling_products": [...],
+    "most_viewed_products": [...],
+    "highest_discount_products": [...],
+    "categories": [...]
+  },
+  "timestamp": "2024-01-01T00:00:00.000Z"
+}
+```
+
+---
+
+### 2. Lấy tất cả sản phẩm
+
+**Endpoint:** `GET /api/products`
+**Description:** Lấy danh sách sản phẩm với phân trang và bộ lọc
+
+**Query Parameters:**
+- `page`: Số trang (mặc định: 1)
+- `limit`: Số sản phẩm trên trang (mặc định: 12, tối đa: 100)
+- `category_id`: Lọc theo danh mục
+- `min_price`: Giá tối thiểu
+- `max_price`: Giá tối đa
+- `search`: Từ khóa tìm kiếm
+- `sort_by`: Sắp xếp (price_asc, price_desc, name, popularity, best_selling, newest)
+- `on_sale`: Chỉ lấy sản phẩm khuyến mãi (true/false)
+- `in_stock`: Chỉ lấy sản phẩm còn hàng (true/false)
+
+**Response Success (200):**
+```json
+{
+  "success": true,
+  "data": [...],
+  "pagination": {
+    "page": 1,
+    "limit": 12,
+    "total": 100,
+    "totalPages": 9
+  },
+  "timestamp": "2024-01-01T00:00:00.000Z"
+}
+
+✅ GET /api/products/latest - Sản phẩm mới nhất
+✅ GET /api/products/best-selling - Sản phẩm bán chạy
+✅ GET /api/products/most-viewed - Sản phẩm được xem nhiều
+✅ GET /api/products/highest-discount - Sản phẩm khuyến mãi cao
+
+```
+
+---
+
+### 3. Lấy chi tiết sản phẩm
+
+**Endpoint:** `GET /api/products/1`
+**Description:** Lấy thông tin chi tiết sản phẩm và tự động tăng lượt xem
+
+**Response Success (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "product": {
+      "id": 1,
+      "name": "iPhone 15 Pro",
+      "description": "...",
+      "price": 999.99,
+      "sale_price": 899.99,
+      "discount_percentage": 10.00,
+      "effective_price": 899.99,
+      "savings_amount": 100.00,
+      "stock_quantity": 50,
+      "stock_status": "in_stock",
+      "category_id": 1,
+      "category_name": "Electronics",
+      "image_url": "/images/iphone15pro.jpg",
+      "images": ["image1.jpg", "image2.jpg"],
+      "specifications": {...},
+      "view_count": 1250,
+      "sold_count": 45,
+      "is_featured": true,
+      "is_on_sale": true,
+      "is_in_stock": true
+    },
+    "related_products": [...],
+    "category": {...}
+  },
+  "timestamp": "2024-01-01T00:00:00.000Z"
+}
+```
+
+---
+
+### 4. Tìm kiếm sản phẩm
+
+**Endpoint:** `GET /api/products/search`
+**Description:** Tìm kiếm sản phẩm theo từ khóa trong tên và mô tả sản phẩm
+
+**Query Parameters:**
+- `q`: Từ khóa tìm kiếm (bắt buộc, tối thiểu 1 ký tự)
+- `page`: Số trang (mặc định: 1)
+- `limit`: Số sản phẩm trên trang (mặc định: 12, tối đa: 100)
+
+**Examples:**
+```bash
+# Tìm kiếm cơ bản
+GET /api/products/search?q=iPhone
+
+# Tìm kiếm với phân trang
+GET /api/products/search?q=iPhone&page=2&limit=20
+
+# Tìm kiếm nhiều từ khóa
+GET /api/products/search?q=iPhone%2015%20Pro
+```
+
+**Response Success (200):**
+```json
+{
+  "success": true,
+  "message": "Tìm thấy 15 sản phẩm",
+  "data": [
+    {
+      "id": 1,
+      "name": "iPhone 15 Pro",
+      "description": "Latest iPhone with advanced features",
+      "price": 999.99,
+      "sale_price": 899.99,
+      "discount_percentage": 10.00,
+      "effective_price": 899.99,
+      "savings_amount": 100.00,
+      "stock_quantity": 50,
+      "stock_status": "in_stock",
+      "category_id": 1,
+      "category_name": "Electronics",
+      "image_url": "/images/iphone15pro.jpg",
+      "images": ["image1.jpg", "image2.jpg"],
+      "specifications": {
+        "storage": "256GB",
+        "color": "Natural Titanium"
+      },
+      "view_count": 1250,
+      "sold_count": 45,
+      "is_featured": true,
+      "is_on_sale": true,
+      "is_in_stock": true,
+      "created_at": "2024-01-01T00:00:00.000Z",
+      "updated_at": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 12,
+    "total": 15,
+    "totalPages": 2
+  },
+  "timestamp": "2024-01-01T00:00:00.000Z"
+}
+```
+
+**Response Error (400):**
+```json
+{
+  "success": false,
+  "message": "Từ khóa tìm kiếm không được để trống",
+  "errors": null,
+  "timestamp": "2024-01-01T00:00:00.000Z"
+}
+```
+
+---
+
+### 5. Lấy sản phẩm theo danh mục
+
+**Endpoint:** `GET /api/products/categories/categoryId(VD:1)/products`
+**Description:** Lấy danh sách sản phẩm trong danh mục
+
+---
+
+### 6. Lấy danh sách danh mục
+
+**Endpoint:** `GET /api/products/categories`
+**Description:** Lấy tất cả danh mục sản phẩm
+
+---
+
+### 7. Lấy sản phẩm liên quan
+
+**Endpoint:** `GET /api/products/id(VD:1)/related`
+**Description:** Lấy sản phẩm liên quan (cùng danh mục)
+
+---
+
+## 📦 Order Endpoints
+
+### 1. Tạo đơn hàng mới
+
+**Endpoint:** `POST /api/orders`
+**Description:** Tạo đơn hàng mới
+**Authentication:** Required
+
+**Request Body:**
+```json
+{
+  "items": [
+    {
+      "product_id": 1,
+      "quantity": 2
+    }
+  ],
+  "shipping_address": "123 Đường ABC, Quận 1, TP.HCM",
+  "notes": "Giao hàng buổi chiều"
+}
+```
+
+**Response Success (201):**
+```json
+{
+  "success": true,
+  "data": {
+    "order": {
+      "id": 1,
+      "user_id": 1,
+      "total_amount": 1799.98,
+      "status": "pending",
+      "status_text": "Chờ xác nhận",
+      "shipping_address": "...",
+      "notes": "...",
+      "items": [...],
+      "total_items": 2
+    }
+  },
+  "timestamp": "2024-01-01T00:00:00.000Z"
+}
+```
+
+---
+
+### 2. Lấy đơn hàng của tôi
+
+**Endpoint:** `GET /api/orders`
+**Description:** Lấy danh sách đơn hàng của người dùng hiện tại
+**Authentication:** Required
+
+**Query Parameters:**
+- `page`: Số trang
+- `limit`: Số đơn hàng trên trang
+
+---
+
+### 3. Lấy chi tiết đơn hàng
+
+**Endpoint:** `GET /api/orders/:id`
+**Description:** Lấy thông tin chi tiết đơn hàng
+**Authentication:** Required
+
+---
+
+### 4. Hủy đơn hàng
+
+**Endpoint:** `PATCH /api/orders/:id/cancel`
+**Description:** Hủy đơn hàng (chỉ áp dụng cho đơn hàng đang chờ xác nhận)
+**Authentication:** Required
+
+---
+
+### 5. Thống kê đơn hàng cá nhân
+
+**Endpoint:** `GET /api/orders/stats`
+**Description:** Lấy thống kê đơn hàng của người dùng
+**Authentication:** Required
+
+**Response Success (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "stats": {
+      "total_orders": 10,
+      "pending_orders": 2,
+      "confirmed_orders": 3,
+      "shipping_orders": 1,
+      "delivered_orders": 3,
+      "cancelled_orders": 1,
+      "total_spent": 5000000
+    }
+  },
+  "timestamp": "2024-01-01T00:00:00.000Z"
+}
+```
+
+---
+
+## �🛠 Utility Endpoints
 
 ### 1. Health Check
 
