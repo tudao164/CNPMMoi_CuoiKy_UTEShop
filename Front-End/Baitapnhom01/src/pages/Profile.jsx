@@ -6,7 +6,10 @@ const Profile = () => {
     const token = localStorage.getItem("token");
     const [activeTab, setActiveTab] = useState("profile");
 
-    const [profile, setProfile] = useState({ full_name: "", email: "", phone: "" });
+    const [profile, setProfile] = useState({ full_name: "", email: "", phone: "", avatar_url: "" });
+    const [avatarFile, setAvatarFile] = useState(null);
+    const [avatarUrl, setAvatarUrl] = useState("");
+
     const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
     const [stats, setStats] = useState(null);
     const [otps, setOtps] = useState([]);
@@ -20,7 +23,10 @@ const Profile = () => {
         const fetchProfile = async () => {
             try {
                 const res = await axios.get("http://localhost:3000/api/user/profile", { headers: { Authorization: `Bearer ${token}` } });
-                if (res.data.success) setProfile(res.data.data.user);
+                if (res.data.success) {
+                    setProfile(res.data.data.user);
+                    setAvatarUrl(res.data.data.user.avatar_url || "");
+                }
             } catch { }
         };
         const fetchStats = async () => {
@@ -43,29 +49,75 @@ const Profile = () => {
     const handleProfileChange = (e) => setProfile({ ...profile, [e.target.name]: e.target.value });
     const handlePasswordChange = (e) => setPasswords({ ...passwords, [e.target.name]: e.target.value });
 
+    const handleAvatarChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setAvatarFile(file);
+        const reader = new FileReader();
+        reader.onload = () => setAvatarUrl(reader.result);
+        reader.readAsDataURL(file);
+    };
+
     const updateProfile = async (e) => {
         e.preventDefault();
-        setLoading(true); setMessage(""); setErrors([]);
+        setLoading(true);
+        setMessage("");
+        setErrors([]);
+
         try {
-            const res = await axios.put("http://localhost:3000/api/user/profile",
-                { full_name: profile.full_name, phone: profile.phone },
-                { headers: { Authorization: `Bearer ${token}` } });
-            if (res.data.success) setMessage("✅ Cập nhật profile thành công!");
-            else setMessage(res.data.message);
+            let uploadedUrl = avatarUrl;
+
+
+            if (avatarFile) {
+                const formData = new FormData();
+                formData.append("avatar", avatarFile);
+                const uploadRes = await axios.post(
+                    "http://localhost:3000/api/user/upload-avatar",
+                    formData,
+                    { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } }
+                );
+                uploadedUrl = uploadRes.data.url;
+            }
+
+            const res = await axios.put(
+                "http://localhost:3000/api/user/profile",
+                {
+                    full_name: profile.full_name,
+                    phone: profile.phone,
+                    avatar_url: "dt1.jpg"
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (res.data.success) {
+                setMessage("✅ Cập nhật profile thành công!");
+                setProfile(res.data.data.user);
+                setAvatarUrl(res.data.data.user.avatar_url || "");
+            } else {
+                setMessage(res.data.message);
+            }
         } catch (err) {
             const data = err.response?.data;
             if (data?.errors) setErrors(data.errors);
             setMessage(data?.message || "❌ Lỗi server!");
-        } finally { setLoading(false); }
+        } finally {
+            setLoading(false);
+        }
     };
 
     const changePassword = async (e) => {
         e.preventDefault();
-        setLoading(true); setMessage(""); setErrors([]);
+        setLoading(true);
+        setMessage("");
+        setErrors([]);
+
         try {
-            const res = await axios.post("http://localhost:3000/api/user/change-password",
+            const res = await axios.post(
+                "http://localhost:3000/api/user/change-password",
                 { current_password: passwords.current, new_password: passwords.new, confirm_password: passwords.confirm },
-                { headers: { Authorization: `Bearer ${token}` } });
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
             if (res.data.success) {
                 setMessage("✅ Đổi mật khẩu thành công!");
                 setPasswords({ current: "", new: "", confirm: "" });
@@ -74,21 +126,27 @@ const Profile = () => {
             const data = err.response?.data;
             if (data?.errors) setErrors(data.errors);
             setMessage(data?.message || "❌ Lỗi server!");
-        } finally { setLoading(false); }
+        } finally {
+            setLoading(false);
+        }
     };
 
     const deleteAccount = async () => {
         const confirm = window.prompt("Nhập mật khẩu để xác nhận xóa tài khoản:");
         if (!confirm) return;
         try {
-            const res = await axios.delete("http://localhost:3000/api/user/account",
-                { headers: { Authorization: `Bearer ${token}` }, data: { password: confirm } });
+            const res = await axios.delete(
+                "http://localhost:3000/api/user/account",
+                { headers: { Authorization: `Bearer ${token}` }, data: { password: confirm } }
+            );
             if (res.data.success) {
                 alert("Tài khoản đã xóa thành công!");
                 localStorage.removeItem("token");
                 navigate("/login");
             }
-        } catch (err) { alert(err.response?.data?.message || "❌ Lỗi xóa tài khoản"); }
+        } catch (err) {
+            alert(err.response?.data?.message || "❌ Lỗi xóa tài khoản");
+        }
     };
 
     const tabs = [
@@ -135,6 +193,12 @@ const Profile = () => {
 
                             <label className="block mb-1">Số điện thoại</label>
                             <input type="text" name="phone" value={profile.phone} onChange={handleProfileChange} className="w-full mb-4 p-2 border rounded" />
+
+                            <label className="block mb-1">Ảnh đại diện</label>
+                            <div className="mb-4 flex items-center gap-4">
+                                {avatarUrl && <img src={avatarUrl} alt="Avatar" className="w-16 h-16 rounded-full object-cover" />}
+                                <input type="file" accept="image/*" onChange={handleAvatarChange} />
+                            </div>
 
                             <button type="submit" disabled={loading} className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600 mb-2">{loading ? "Đang lưu..." : "Cập nhật"}</button>
                         </form>

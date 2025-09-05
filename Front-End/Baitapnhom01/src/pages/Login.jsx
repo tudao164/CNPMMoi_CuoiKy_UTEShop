@@ -26,7 +26,7 @@ const Login = () => {
             if (res.data.success) {
                 dispatch(loginUser(res.data));
                 localStorage.setItem("token", res.data.data.token);
-                navigate("/profile");
+                navigate("/main");
             } else {
                 setError(res.data.message || "Đăng nhập thất bại");
             }
