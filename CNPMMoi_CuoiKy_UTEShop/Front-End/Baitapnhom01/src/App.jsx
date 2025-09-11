@@ -8,7 +8,8 @@ import VerifyOTP from "./pages/VerifyOTP";
 import ResetPassword from "./pages/ResetPassword";
 import Main from "./pages/Main";             // Trang chủ sau khi login
 import Orders from "./pages/Orders";         // Đơn hàng của tôi
-import ProductDetail from "./pages/ProductDetail"; // Thêm import
+import ProductDetail from "./pages/ProductDetail"; // Chi tiết sản phẩm
+import ProductsPage from "./pages/ProductsPage"; // Trang tất cả sản phẩm
 
 function App() {
   return (
@@ -29,8 +30,9 @@ function App() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/orders" element={<Orders />} />
 
-        {/* Product Detail */}
-        <Route path="/product/:id" element={<ProductDetail />} /> {/* Thêm route chi tiết sản phẩm */}
+        {/* Products */}
+        <Route path="/products" element={<ProductsPage />} /> {/* Trang tất cả sản phẩm */}
+        <Route path="/product/:id" element={<ProductDetail />} /> {/* Chi tiết sản phẩm */}
       </Routes>
     </BrowserRouter>
   );

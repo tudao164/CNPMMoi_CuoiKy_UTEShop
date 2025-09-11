@@ -1,6 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { getProducts, searchProducts, getHomeData } from "../services/api";
+import ProductGrid from "../components/ProductGrid";
+import Pagination from "../components/Pagination";
+import { useDebounce } from "../hooks/useDebounce";
 
 const Main = () => {
     const navigate = useNavigate();
@@ -11,10 +15,16 @@ const Main = () => {
     const [homeData, setHomeData] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [filterType, setFilterType] = useState("all");
+    const [loading, setLoading] = useState(false);
 
-    // pagination
+    // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
+    const [productsData, setProductsData] = useState(null);
+    const [pagination, setPagination] = useState(null);
     const itemsPerPage = 12;
+
+    // Debounce search query to avoid too many API calls
+    const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
     // load user
     useEffect(() => {
@@ -39,42 +49,63 @@ const Main = () => {
 
     // load home products lần đầu
     useEffect(() => {
-        const fetchProducts = async () => {
+        const fetchHomeData = async () => {
             try {
-                const res = await axios.get("http://localhost:3000/api/products/home");
-                setHomeData(res.data.data);
+                setLoading(true);
+                const data = await getHomeData();
+                setHomeData(data.data);
             } catch (err) {
                 console.error("Lỗi load sản phẩm:", err);
+            } finally {
+                setLoading(false);
             }
         };
-        fetchProducts();
+        fetchHomeData();
     }, []);
 
-    // gọi API search khi searchQuery thay đổi
+    // Fetch products function
+    const fetchProducts = useCallback(async (page = 1, query = "", filter = "all") => {
+        try {
+            setLoading(true);
+            let response;
+
+            if (query.trim()) {
+                // Search products
+                response = await searchProducts(query, page, itemsPerPage);
+                console.log('Search response:', response);
+                setProductsData(response.data);
+                setPagination(response.pagination);
+                setHomeData(null); // Clear home data when searching
+            } else if (filter === "all") {
+                // Get all products with pagination
+                response = await getProducts(page, itemsPerPage);
+                console.log('All products response:', response);
+                setProductsData(response.data);
+                setPagination(response.pagination);
+                setHomeData(null); // Clear home data when showing all products
+            } else {
+                // Show home data with specific filter
+                const homeResponse = await getHomeData();
+                setHomeData(homeResponse.data);
+                setProductsData(null);
+                setPagination(null);
+            }
+        } catch (err) {
+            console.error("Lỗi load sản phẩm:", err);
+        } finally {
+            setLoading(false);
+        }
+    }, [itemsPerPage]);
+
+    // Effect for search and filter changes (reset to page 1)
     useEffect(() => {
-        const fetchSearch = async () => {
-            if (!searchQuery.trim()) {
-                try {
-                    const res = await axios.get("http://localhost:3000/api/products/home");
-                    setHomeData(res.data.data);
-                } catch (err) {
-                    console.error("Lỗi load sản phẩm:", err);
-                }
-                return;
-            }
+        setCurrentPage(1);
+    }, [debouncedSearchQuery, filterType]);
 
-            try {
-                const res = await axios.get(
-                    `http://localhost:3000/api/products/search?q=${encodeURIComponent(searchQuery)}`
-                );
-                setHomeData({ search_products: res.data.data });
-            } catch (err) {
-                console.error("Lỗi tìm kiếm:", err);
-            }
-        };
-
-        fetchSearch();
-    }, [searchQuery]);
+    // Effect for page changes (including when reset to page 1)
+    useEffect(() => {
+        fetchProducts(currentPage, debouncedSearchQuery, filterType);
+    }, [currentPage, debouncedSearchQuery, filterType, fetchProducts]);
 
     const logout = () => {
         localStorage.removeItem("token");
@@ -82,63 +113,46 @@ const Main = () => {
         navigate("/");
     };
 
-    const getFilteredData = () => {
-        if (!homeData) return [];
-
-        if (homeData.search_products) {
-            return homeData.search_products;
-        }
-
-        switch (filterType) {
-            case "latest":
-                return homeData.latest_products || [];
-            case "best_selling":
-                return homeData.best_selling_products || [];
-            case "most_viewed":
-                return homeData.most_viewed_products || [];
-            case "highest_discount":
-                return homeData.highest_discount_products || [];
-            default:
-                return [
-                    ...(homeData.latest_products || []),
-                    ...(homeData.best_selling_products || []),
-                    ...(homeData.most_viewed_products || []),
-                    ...(homeData.highest_discount_products || []),
-                ];
-        }
+    const handlePageChange = (page) => {
+        console.log('Page change requested:', page, 'current page:', currentPage);
+        setCurrentPage(page);
     };
 
-    const renderProducts = (products) =>
-        products?.map((p) => (
-            <div key={p.id} className="border p-2 rounded hover:shadow-lg">
-                <Link to={`/product/${p.id}`}>
-                    <img
-                        src={p.image || "/dt1.jpg"} // nó ở public
-                        alt={p.name}
-                        className="w-full h-48 object-cover rounded"
-                    />
-                    <h3 className="mt-2 text-sm font-semibold">{p.name}</h3>
-                </Link>
-                <p className="text-red-500 font-bold">
-                    {p.sale_price ? `$${p.sale_price}` : `$${p.price}`}
-                </p>
-            </div>
-        ));
+    const handleSearchChange = (e) => {
+        setSearchQuery(e.target.value);
+    };
 
-    // dữ liệu sau filter
-    const allFilteredProducts = getFilteredData();
+    const handleFilterChange = (e) => {
+        setFilterType(e.target.value);
+    };
 
-    // phân trang
-    const indexOfLast = currentPage * itemsPerPage;
-    const indexOfFirst = indexOfLast - itemsPerPage;
-    const currentProducts = allFilteredProducts.slice(indexOfFirst, indexOfLast);
+    const getDisplayProducts = () => {
+        // If we have products data from API (search or all products)
+        if (productsData) {
+            return productsData;
+        }
 
-    const totalPages = Math.ceil(allFilteredProducts.length / itemsPerPage);
+        // If we have home data and a specific filter
+        if (homeData && filterType !== "all") {
+            switch (filterType) {
+                case "latest":
+                    return homeData.latest_products || [];
+                case "best_selling":
+                    return homeData.best_selling_products || [];
+                case "most_viewed":
+                    return homeData.most_viewed_products || [];
+                case "highest_discount":
+                    return homeData.highest_discount_products || [];
+                default:
+                    return [];
+            }
+        }
 
-    // reset về trang 1 khi đổi filter hoặc search
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [filterType, searchQuery]);
+        // Default: show latest products from home data
+        return homeData?.latest_products || [];
+    };
+
+    const displayProducts = getDisplayProducts();
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -203,15 +217,16 @@ const Main = () => {
                         type="text"
                         placeholder="Tìm sản phẩm..."
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={handleSearchChange}
                         className="w-full md:w-1/2 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
 
                     {/* Lọc sản phẩm */}
                     <select
                         value={filterType}
-                        onChange={(e) => setFilterType(e.target.value)}
+                        onChange={handleFilterChange}
                         className="px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                        disabled={!!searchQuery.trim()} // Disable filter when searching
                     >
                         <option value="all">Tất cả sản phẩm</option>
                         <option value="latest">Sản phẩm mới nhất</option>
@@ -219,51 +234,44 @@ const Main = () => {
                         <option value="most_viewed">Sản phẩm xem nhiều</option>
                         <option value="highest_discount">Sản phẩm khuyến mãi cao</option>
                     </select>
+
+                    {/* Link to full products page */}
+                    <button
+                        onClick={() => navigate('/products')}
+                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                    >
+                        Xem tất cả
+                    </button>
                 </div>
 
-                {!homeData ? (
-                    <p>Loading sản phẩm...</p>
-                ) : (
-                    <>
-                        {/* Danh sách sản phẩm */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {renderProducts(currentProducts)}
-                        </div>
+                {/* Search result info */}
+                {searchQuery.trim() && (
+                    <div className="mb-4 text-center">
+                        <p className="text-gray-600">
+                            {loading ? 'Đang tìm kiếm...' : `Kết quả tìm kiếm cho: "${searchQuery}"`}
+                            {pagination && ` - ${pagination.total} sản phẩm`}
+                        </p>
+                    </div>
+                )}
 
-                        {/* Pagination */}
-                        {totalPages > 1 && (
-                            <div className="flex justify-center items-center gap-2 mt-6">
-                                <button
-                                    disabled={currentPage === 1}
-                                    onClick={() => setCurrentPage((prev) => prev - 1)}
-                                    className="px-3 py-1 border rounded disabled:opacity-50"
-                                >
-                                    Prev
-                                </button>
+                {/* Products Grid */}
+                <ProductGrid products={displayProducts} loading={loading} />
 
-                                {[...Array(totalPages)].map((_, index) => (
-                                    <button
-                                        key={index}
-                                        onClick={() => setCurrentPage(index + 1)}
-                                        className={`px-3 py-1 border rounded ${currentPage === index + 1
-                                            ? "bg-green-600 text-white"
-                                            : "bg-white"
-                                            }`}
-                                    >
-                                        {index + 1}
-                                    </button>
-                                ))}
+                {/* Pagination - only show for search results or "all" filter */}
+                {pagination && (debouncedSearchQuery.trim() || filterType === "all") && (
+                    <Pagination 
+                        pagination={pagination} 
+                        onPageChange={handlePageChange}
+                    />
+                )}
 
-                                <button
-                                    disabled={currentPage === totalPages}
-                                    onClick={() => setCurrentPage((prev) => prev + 1)}
-                                    className="px-3 py-1 border rounded disabled:opacity-50"
-                                >
-                                    Next
-                                </button>
-                            </div>
-                        )}
-                    </>
+                {/* Show simple grid for home data filters without pagination */}
+                {!pagination && homeData && filterType !== "all" && !debouncedSearchQuery.trim() && (
+                    <div className="text-center mt-6">
+                        <p className="text-sm text-gray-500">
+                            Hiển thị {displayProducts.length} sản phẩm
+                        </p>
+                    </div>
                 )}
             </div>
         </div>
