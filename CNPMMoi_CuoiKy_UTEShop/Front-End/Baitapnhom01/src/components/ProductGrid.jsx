@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import ImageWithFallback from './ImageWithFallback';
 
 const ProductGrid = ({ products, loading = false }) => {
   if (loading) {
@@ -30,10 +31,11 @@ const ProductGrid = ({ products, loading = false }) => {
         <div key={product.id} className="border p-4 rounded-lg hover:shadow-lg transition-shadow">
           <Link to={`/product/${product.id}`}>
             <div className="relative">
-              <img
-                src={product.image_url || "/dt1.jpg"}
+              <ImageWithFallback
+                src={product.image_url}
                 alt={product.name}
                 className="w-full h-48 object-cover rounded mb-2"
+                fallbackSrc="/dt1.jpg"
               />
               {product.is_on_sale && product.discount_percentage > 0 && (
                 <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import ImageWithFallback from './ImageWithFallback';
 
 const FuzzySearchResults = ({ results, isSearching, query, onResultClick, getHighlightedText }) => {
   const navigate = useNavigate();
@@ -40,13 +41,11 @@ const FuzzySearchResults = ({ results, isSearching, query, onResultClick, getHig
         >
           {/* Product Image */}
           <div className="w-12 h-12 flex-shrink-0 mr-3">
-            <img
-              src={product.image_url || '/placeholder-image.jpg'}
+            <ImageWithFallback
+              src={product.image_url}
               alt={product.name}
               className="w-full h-full object-cover rounded"
-              onError={(e) => {
-                e.target.src = '/placeholder-image.jpg';
-              }}
+              fallbackSrc="/dt1.jpg"
             />
           </div>
 
