@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ProductsProvider } from "./contexts/ProductsContext";
 import Home from "./pages/Home";             // Trang chủ khi chưa login
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -13,8 +14,9 @@ import ProductsPage from "./pages/ProductsPage"; // Trang tất cả sản phẩ
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <ProductsProvider>
+      <BrowserRouter>
+        <Routes>
         {/* Trang chủ (guest) */}
         <Route path="/" element={<Home />} />
 
@@ -35,7 +37,8 @@ function App() {
         <Route path="/product/:id" element={<ProductDetail />} /> {/* Chi tiết sản phẩm */}
       </Routes>
     </BrowserRouter>
-  );
+  </ProductsProvider>
+);
 }
 
 export default App;

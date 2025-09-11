@@ -4,11 +4,14 @@ import axios from "axios";
 import { getProducts, searchProducts, getHomeData } from "../services/api";
 import ProductGrid from "../components/ProductGrid";
 import Pagination from "../components/Pagination";
+import SearchBox from "../components/SearchBox";
+import { useProducts } from "../contexts/ProductsContext";
 import { useDebounce } from "../hooks/useDebounce";
 
 const Main = () => {
     const navigate = useNavigate();
     const token = localStorage.getItem("token");
+    const { allProducts } = useProducts(); // Get products for fuzzy search
 
     const [user, setUser] = useState(null);
     const [menuOpen, setMenuOpen] = useState(false);
@@ -118,10 +121,6 @@ const Main = () => {
         setCurrentPage(page);
     };
 
-    const handleSearchChange = (e) => {
-        setSearchQuery(e.target.value);
-    };
-
     const handleFilterChange = (e) => {
         setFilterType(e.target.value);
     };
@@ -213,12 +212,14 @@ const Main = () => {
             {/* Nội dung trang */}
             <div className="p-6">
                 <div className="flex flex-col md:flex-row items-center justify-center mb-6 gap-4">
-                    <input
-                        type="text"
-                        placeholder="Tìm sản phẩm..."
-                        value={searchQuery}
-                        onChange={handleSearchChange}
-                        className="w-full md:w-1/2 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                    {/* Fuzzy Search Box */}
+                    <SearchBox
+                        products={allProducts}
+                        onSearch={(query) => {
+                            setSearchQuery(query);
+                            setCurrentPage(1);
+                        }}
+                        className="w-full md:w-1/2"
                     />
 
                     {/* Lọc sản phẩm */}

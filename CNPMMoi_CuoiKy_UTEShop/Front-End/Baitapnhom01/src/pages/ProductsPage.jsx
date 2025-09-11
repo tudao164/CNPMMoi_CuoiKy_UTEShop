@@ -3,11 +3,14 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { getProducts, searchProducts } from "../services/api";
 import ProductGrid from "../components/ProductGrid";
 import Pagination from "../components/Pagination";
+import SearchBox from "../components/SearchBox";
+import { useProducts } from "../contexts/ProductsContext";
 import { useDebounce } from "../hooks/useDebounce";
 
 const ProductsPage = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
+    const { allProducts } = useProducts(); // Get products for fuzzy search
     
     const [products, setProducts] = useState([]);
     const [pagination, setPagination] = useState(null);
@@ -129,17 +132,15 @@ const ProductsPage = () => {
                                 </button>
                             </div>
 
-                            {/* Search */}
+                            {/* Search with Fuzzy Search */}
                             <div className="mb-4">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Tìm kiếm
+                                    Tìm kiếm (Fuzzy Search)
                                 </label>
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Nhập từ khóa..."
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                                <SearchBox
+                                    products={allProducts}
+                                    onSearch={(query) => setSearchQuery(query)}
+                                    className="w-full"
                                 />
                             </div>
 
