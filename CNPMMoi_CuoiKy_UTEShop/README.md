@@ -1427,7 +1427,7 @@ Cart → /api/orders/from-cart → Order + Payment (1 step)
       "status": "approved",
       "status_text": "Đã chấp thuận",
       "status_color": "green",
-      "admin_notes": "Tự động chấp thuận - trong thời gian cho phép hủy",
+      "admin_response": "Tự động chấp thuận - trong thời gian cho phép hủy",
       "created_at": "2024-01-01T00:10:00.000Z",
       "processed_at": "2024-01-01T00:10:00.000Z",
       "is_editable": false,
@@ -1474,7 +1474,7 @@ Cart → /api/orders/from-cart → Order + Payment (1 step)
         "status": "approved",
         "status_text": "Đã chấp thuận",
         "status_color": "green",
-        "admin_notes": "Tự động chấp thuận - trong thời gian cho phép hủy",
+        "admin_response": "Tự động chấp thuận - trong thời gian cho phép hủy",
         "created_at": "2024-01-01T00:10:00.000Z",
         "processed_at": "2024-01-01T00:10:00.000Z",
         "is_urgent": true,
@@ -1522,7 +1522,7 @@ Cart → /api/orders/from-cart → Order + Payment (1 step)
 ```json
 {
   "status": "approved",
-  "admin_notes": "Chấp thuận yêu cầu hủy đơn vì lý do hợp lý"
+  "admin_response": "Chấp thuận yêu cầu hủy đơn vì lý do hợp lý"
 }
 ```
 
@@ -1536,7 +1536,7 @@ Cart → /api/orders/from-cart → Order + Payment (1 step)
       "id": 1,
       "status": "approved",
       "status_text": "Đã chấp thuận",
-      "admin_notes": "Chấp thuận yêu cầu hủy đơn vì lý do hợp lý",
+      "admin_response": "Chấp thuận yêu cầu hủy đơn vì lý do hợp lý",
       "processed_by": 2,
       "processed_by_name": "Admin User",
       "processed_at": "2024-01-01T02:00:00.000Z",

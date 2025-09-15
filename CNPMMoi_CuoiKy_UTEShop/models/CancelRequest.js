@@ -7,7 +7,7 @@ class CancelRequest {
         this.user_id = requestData.user_id;
         this.reason = requestData.reason;
         this.status = requestData.status;
-        this.admin_notes = requestData.admin_notes;
+        this.admin_response = requestData.admin_response;
         this.processed_by = requestData.processed_by;
         this.created_at = requestData.created_at;
         this.processed_at = requestData.processed_at;
@@ -83,7 +83,7 @@ class CancelRequest {
 
             // Create cancel request
             const result = await executeQuery(
-                'INSERT INTO cancel_requests (order_id, user_id, reason, status, admin_notes) VALUES (?, ?, ?, ?, ?)',
+                'INSERT INTO cancel_requests (order_id, user_id, reason, status, admin_response) VALUES (?, ?, ?, ?, ?)',
                 [order_id, user_id, reason, requestStatus, adminNotes]
             );
 
@@ -100,8 +100,8 @@ class CancelRequest {
 
                 // Add to order status history
                 await executeQuery(
-                    'INSERT INTO order_status_history (order_id, status, notes, changed_by, changed_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)',
-                    [order_id, 'cancel_requested', `Khách hàng yêu cầu hủy đơn: ${reason}`, user_id]
+                    'INSERT INTO order_status_history (order_id, to_status, reason, updated_by) VALUES (?, ?, ?, ?)',
+                    [order_id, 'cancel_requested', `Khách hàng yêu cầu hủy đơn: ${reason}`, 'user']
                 );
             }
 
@@ -250,7 +250,7 @@ class CancelRequest {
         try {
             const {
                 status, // 'approved' or 'rejected'
-                admin_notes,
+                admin_response,
                 processed_by
             } = processData;
 
@@ -271,8 +271,8 @@ class CancelRequest {
 
             // Update cancel request
             await executeQuery(
-                'UPDATE cancel_requests SET status = ?, admin_notes = ?, processed_by = ?, processed_at = CURRENT_TIMESTAMP WHERE id = ?',
-                [status, admin_notes, processed_by, requestId]
+                'UPDATE cancel_requests SET status = ?, admin_response = ?, processed_by = ?, processed_at = CURRENT_TIMESTAMP WHERE id = ?',
+                [status, admin_response, processed_by, requestId]
             );
 
             // Update order status based on decision
@@ -281,7 +281,7 @@ class CancelRequest {
                 await Order.updateStatus(
                     cancelRequest.order_id, 
                     'cancelled', 
-                    `Chấp thuận yêu cầu hủy: ${admin_notes || 'Không có ghi chú'}`,
+                    `Chấp thuận yêu cầu hủy: ${admin_response || 'Không có ghi chú'}`,
                     processed_by
                 );
             } else {
@@ -289,7 +289,7 @@ class CancelRequest {
                 await Order.updateStatus(
                     cancelRequest.order_id, 
                     'confirmed', 
-                    `Từ chối yêu cầu hủy: ${admin_notes || 'Không có ghi chú'}`,
+                    `Từ chối yêu cầu hủy: ${admin_response || 'Không có ghi chú'}`,
                     processed_by
                 );
             }
@@ -418,7 +418,7 @@ class CancelRequest {
             status: this.status,
             status_text: this.getStatusText(),
             status_color: this.getStatusColor(),
-            admin_notes: this.admin_notes,
+            admin_response: this.admin_response,
             processed_by: this.processed_by,
             processed_by_name: this.processed_by_name,
             created_at: this.created_at,

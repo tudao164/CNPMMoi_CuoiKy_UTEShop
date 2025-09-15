@@ -300,7 +300,7 @@ class OrderStatusHistory {
             cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 
             const result = await executeQuery(
-                'DELETE FROM order_status_history WHERE changed_at < ?',
+                'DELETE FROM order_status_history WHERE created_at < ?',
                 [cutoffDate]
             );
 

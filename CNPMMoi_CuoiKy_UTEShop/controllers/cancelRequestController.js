@@ -257,7 +257,7 @@ class CancelRequestController {
         try {
             const requestId = req.params.id;
             const adminId = req.user.id;
-            const { status, admin_notes } = req.body;
+            const { status, admin_response } = req.body;
 
             // Note: In real implementation, add admin role check here
             // if (req.user.role !== 'admin') {
@@ -269,14 +269,14 @@ class CancelRequestController {
                 return errorResponse(res, 'Trạng thái xử lý phải là "approved" hoặc "rejected"', 400);
             }
 
-            if (!admin_notes || admin_notes.trim().length < 5) {
+            if (!admin_response || admin_response.trim().length < 5) {
                 return errorResponse(res, 'Ghi chú admin phải có ít nhất 5 ký tự', 400);
             }
 
             // Process request
             const processedRequest = await CancelRequest.processRequest(requestId, {
                 status,
-                admin_notes: admin_notes.trim(),
+                admin_response: admin_response.trim(),
                 processed_by: adminId
             });
 
