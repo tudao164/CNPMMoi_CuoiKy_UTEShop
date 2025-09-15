@@ -244,6 +244,27 @@ const validateCreateOrder = [
     handleValidationErrors
 ];
 
+// Create order from cart validation
+const validateCreateOrderFromCart = [
+    body('shipping_address')
+        .notEmpty()
+        .withMessage('Địa chỉ giao hàng là bắt buộc')
+        .isLength({ min: 10, max: 500 })
+        .withMessage('Địa chỉ giao hàng phải từ 10 đến 500 ký tự'),
+        
+    body('notes')
+        .optional()
+        .isLength({ max: 500 })
+        .withMessage('Ghi chú không được quá 500 ký tự'),
+        
+    body('payment_method')
+        .optional()
+        .isIn(['COD', 'E_WALLET', 'BANK_TRANSFER', 'CREDIT_CARD'])
+        .withMessage('Phương thức thanh toán phải là COD, E_WALLET, BANK_TRANSFER hoặc CREDIT_CARD'),
+        
+    handleValidationErrors
+];
+
 // Order status validation
 const validateOrderStatus = [
     body('status')
@@ -291,6 +312,94 @@ const validateUniqueEmail = (excludeUserId = null) => {
     });
 };
 
+// Cart validation - Add to cart
+const validateAddToCart = [
+    body('product_id')
+        .isInt({ min: 1 })
+        .withMessage('ID sản phẩm phải là số nguyên dương'),
+        
+    body('quantity')
+        .optional()
+        .isInt({ min: 1, max: 999 })
+        .withMessage('Số lượng phải từ 1 đến 999'),
+        
+    handleValidationErrors
+];
+
+// Cart validation - Update cart item
+const validateUpdateCart = [
+    param('id')
+        .isInt({ min: 1 })
+        .withMessage('ID sản phẩm trong giỏ hàng không hợp lệ'),
+        
+    body('quantity')
+        .isInt({ min: 0, max: 999 })
+        .withMessage('Số lượng phải từ 0 đến 999'),
+        
+    handleValidationErrors
+];
+
+// Cart validation - Cart item ID
+const validateCartItemId = (req, res, next) => {
+    const id = parseInt(req.params.id);
+    if (!id || id < 1) {
+        return res.status(400).json({
+            success: false,
+            message: 'ID sản phẩm trong giỏ hàng không hợp lệ'
+        });
+    }
+    next();
+};
+
+// Payment validation - Create payment
+const validateCreatePayment = [
+    body('order_id')
+        .isInt({ min: 1 })
+        .withMessage('ID đơn hàng phải là số nguyên dương'),
+        
+    body('payment_method')
+        .isIn(['COD', 'E_WALLET'])
+        .withMessage('Phương thức thanh toán phải là COD hoặc E_WALLET'),
+        
+    body('amount')
+        .isFloat({ min: 0.01 })
+        .withMessage('Số tiền thanh toán phải lớn hơn 0'),
+        
+    body('notes')
+        .optional()
+        .isLength({ max: 500 })
+        .withMessage('Ghi chú không được quá 500 ký tự'),
+        
+    handleValidationErrors
+];
+
+// Cancel request validation
+const validateCancelRequest = [
+    body('order_id')
+        .isInt({ min: 1 })
+        .withMessage('ID đơn hàng phải là số nguyên dương'),
+        
+    body('reason')
+        .notEmpty()
+        .withMessage('Lý do hủy đơn là bắt buộc')
+        .isLength({ min: 10, max: 500 })
+        .withMessage('Lý do hủy đơn phải từ 10 đến 500 ký tự'),
+        
+    handleValidationErrors
+];
+
+// Cancel request ID validation
+const validateCancelRequestId = (req, res, next) => {
+    const id = parseInt(req.params.id);
+    if (!id || id < 1) {
+        return res.status(400).json({
+            success: false,
+            message: 'ID yêu cầu hủy đơn không hợp lệ'
+        });
+    }
+    next();
+};
+
 module.exports = {
     handleValidationErrors,
     validateRegistration,
@@ -307,8 +416,15 @@ module.exports = {
     validateCategoryId,
     validateOrderId,
     validateCreateOrder,
+    validateCreateOrderFromCart,
     validateOrderStatus,
     validateProductFilters,
+    validateAddToCart,
+    validateUpdateCart,
+    validateCartItemId,
+    validateCreatePayment,
+    validateCancelRequest,
+    validateCancelRequestId,
     isValidEmail,
     isValidPhone,
     isStrongPassword,

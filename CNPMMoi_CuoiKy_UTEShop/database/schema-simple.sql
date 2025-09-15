@@ -1,13 +1,7 @@
 -- ===================================================================
--- UTEShop Complete Database Schema
--- Run this script to create the entire database from scratch
+-- UTEShop Simple Database Schema (Without Triggers/Events)
+-- Run this script to create the database structure without complex features
 -- ===================================================================
-
--- Set SQL mode and character set
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-SET AUTOCOMMIT = 0;
-START TRANSACTION;
-SET time_zone = "+00:00";
 
 -- Create database
 DROP DATABASE IF EXISTS uteshop;
@@ -92,10 +86,6 @@ CREATE TABLE products (
     INDEX idx_name (name)
 );
 
--- ===================================================================
--- E-COMMERCE TABLES
--- ===================================================================
-
 -- Cart Items table
 CREATE TABLE cart_items (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -112,7 +102,7 @@ CREATE TABLE cart_items (
     INDEX idx_added_at (added_at)
 );
 
--- Orders table (Enhanced with new statuses and payment info)
+-- Orders table
 CREATE TABLE orders (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -205,108 +195,6 @@ CREATE TABLE cancel_requests (
     INDEX idx_status (status),
     INDEX idx_created_at (created_at)
 );
-
--- ===================================================================
--- TRIGGERS AND STORED PROCEDURES
--- ===================================================================
-
--- Enable event scheduler for auto-confirmation
-SET GLOBAL event_scheduler = ON;
-
--- Create BEFORE trigger for updating timestamp fields
-DROP TRIGGER IF EXISTS order_status_timestamp_trigger;
-
-DELIMITER $$
-CREATE TRIGGER order_status_timestamp_trigger
-BEFORE UPDATE ON orders
-FOR EACH ROW
-BEGIN
-    -- Update timestamp fields based on status change
-    IF OLD.status != NEW.status THEN
-        IF NEW.status = 'confirmed' AND NEW.confirmed_at IS NULL THEN
-            SET NEW.confirmed_at = NOW();
-        ELSEIF NEW.status = 'shipping' AND NEW.shipped_at IS NULL THEN
-            SET NEW.shipped_at = NOW();
-        ELSEIF NEW.status = 'delivered' AND NEW.delivered_at IS NULL THEN
-            SET NEW.delivered_at = NOW();
-        ELSEIF NEW.status = 'cancelled' AND NEW.cancelled_at IS NULL THEN
-            SET NEW.cancelled_at = NOW();
-        END IF;
-    END IF;
-END$$
-DELIMITER ;
-
--- Create AFTER trigger for order status history tracking
-DROP TRIGGER IF EXISTS order_status_history_trigger;
-
-DELIMITER $$
-CREATE TRIGGER order_status_history_trigger
-AFTER UPDATE ON orders
-FOR EACH ROW
-BEGIN
-    IF OLD.status != NEW.status THEN
-        INSERT INTO order_status_history (order_id, from_status, to_status, updated_by)
-        VALUES (NEW.id, OLD.status, NEW.status, 'system');
-    END IF;
-END$$
-DELIMITER ;
-
--- Stored procedure for auto-confirming orders
-DROP PROCEDURE IF EXISTS AutoConfirmOrders;
-
-DELIMITER $$
-CREATE PROCEDURE AutoConfirmOrders()
-BEGIN
-    DECLARE done INT DEFAULT FALSE;
-    DECLARE order_id INT;
-    DECLARE order_cursor CURSOR FOR 
-        SELECT id FROM orders 
-        WHERE status = 'new' 
-        AND auto_confirm_at <= NOW()
-        AND auto_confirm_at IS NOT NULL;
-    
-    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
-    
-    OPEN order_cursor;
-    
-    read_loop: LOOP
-        FETCH order_cursor INTO order_id;
-        IF done THEN
-            LEAVE read_loop;
-        END IF;
-        
-        UPDATE orders 
-        SET status = 'confirmed', 
-            confirmed_at = NOW()
-        WHERE id = order_id;
-        
-    END LOOP;
-    
-    CLOSE order_cursor;
-END$$
-DELIMITER ;
-
--- Create event for auto-confirmation (runs every 5 minutes)
-DROP EVENT IF EXISTS auto_confirm_orders;
-CREATE EVENT auto_confirm_orders
-ON SCHEDULE EVERY 5 MINUTE
-STARTS CURRENT_TIMESTAMP
-DO
-    CALL AutoConfirmOrders();
-
--- Trigger to set auto_confirm_at when order is created
-DROP TRIGGER IF EXISTS set_auto_confirm_trigger;
-
-DELIMITER $$
-CREATE TRIGGER set_auto_confirm_trigger
-BEFORE INSERT ON orders
-FOR EACH ROW
-BEGIN
-    IF NEW.status = 'new' AND NEW.auto_confirm_at IS NULL THEN
-        SET NEW.auto_confirm_at = DATE_ADD(NOW(), INTERVAL 30 MINUTE);
-    END IF;
-END$$
-DELIMITER ;
 
 -- ===================================================================
 -- SAMPLE DATA
@@ -404,10 +292,10 @@ INSERT INTO users (email, password, full_name, phone, is_verified) VALUES
 ('user2@gmail.com', '$2b$10$8K1p/a9aasdf8wdwq.3/.uK0d6h2kZ0/2.HkUps1rsjsdfaYE6c2', 'Tran Thi B', '0901234567', TRUE);
 
 -- Insert sample orders for testing
-INSERT INTO orders (user_id, total_amount, status, payment_method, shipping_address, notes) VALUES
-(2, 999.99, 'new', 'COD', '123 Nguyen Van Cu, District 5, Ho Chi Minh City', 'Please call before delivery'),
-(2, 459.98, 'confirmed', 'E_WALLET', '456 Le Van Sy, District 3, Ho Chi Minh City', 'Apartment 10A'),
-(3, 129.99, 'delivered', 'COD', '789 Tran Hung Dao, District 1, Ho Chi Minh City', 'Office delivery');
+INSERT INTO orders (user_id, total_amount, status, payment_method, shipping_address, notes, auto_confirm_at) VALUES
+(2, 999.99, 'new', 'COD', '123 Nguyen Van Cu, District 5, Ho Chi Minh City', 'Please call before delivery', DATE_ADD(NOW(), INTERVAL 30 MINUTE)),
+(2, 459.98, 'confirmed', 'E_WALLET', '456 Le Van Sy, District 3, Ho Chi Minh City', 'Apartment 10A', NULL),
+(3, 129.99, 'delivered', 'COD', '789 Tran Hung Dao, District 1, Ho Chi Minh City', 'Office delivery', NULL);
 
 -- Insert sample order items
 INSERT INTO order_items (order_id, product_id, quantity, price) VALUES
@@ -423,5 +311,10 @@ INSERT INTO payments (order_id, payment_method, payment_status, amount) VALUES
 (2, 'E_WALLET', 'completed', 459.98),
 (3, 'COD', 'completed', 129.99);
 
--- Commit all changes
-COMMIT;
+-- Insert sample order status history
+INSERT INTO order_status_history (order_id, from_status, to_status, updated_by) VALUES
+(2, 'new', 'confirmed', 'system'),
+(3, 'new', 'confirmed', 'system'),
+(3, 'confirmed', 'preparing', 'admin'),
+(3, 'preparing', 'shipping', 'admin'),
+(3, 'shipping', 'delivered', 'system');

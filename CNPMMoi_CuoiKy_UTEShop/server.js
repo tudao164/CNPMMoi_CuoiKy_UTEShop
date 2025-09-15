@@ -7,6 +7,9 @@ require('dotenv').config();
 const { testConnection } = require('./config/database');
 const { testEmailConnection } = require('./config/email');
 
+// Import services
+const { startAutoConfirmation } = require('./services/orderAutoConfirmation');
+
 // Import middleware
 const { generalLimiter } = require('./middleware/rateLimiter');
 
@@ -15,6 +18,9 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
+const cartRoutes = require('./routes/cart');
+const paymentRoutes = require('./routes/payments');
+const cancelRequestRoutes = require('./routes/cancel-requests');
 
 // Import utilities
 const { errorResponse } = require('./utils/responseHelper');
@@ -61,6 +67,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/cancel-requests', cancelRequestRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -74,6 +83,9 @@ app.get('/', (req, res) => {
             user: '/api/user',
             products: '/api/products',
             orders: '/api/orders',
+            cart: '/api/cart',
+            payments: '/api/payments',
+            cancelRequests: '/api/cancel-requests',
             health: '/health'
         },
         timestamp: new Date().toISOString()
@@ -126,8 +138,45 @@ app.get('/api/docs', (req, res) => {
                 getUserOrders: 'GET /api/orders',
                 getOrderById: 'GET /api/orders/:id',
                 getUserOrderStats: 'GET /api/orders/stats',
+                getOrderTracking: 'GET /api/orders/:id/tracking',
                 cancelOrder: 'PATCH /api/orders/:id/cancel',
                 updateOrderStatus: 'PATCH /api/orders/:id/status'
+            },
+            cart: {
+                getCart: 'GET /api/cart',
+                getCartSummary: 'GET /api/cart/summary',
+                validateCart: 'GET /api/cart/validate',
+                addToCart: 'POST /api/cart/add',
+                bulkAddToCart: 'POST /api/cart/bulk-add',
+                syncCart: 'POST /api/cart/sync',
+                updateCartItem: 'PUT /api/cart/:id',
+                removeFromCart: 'DELETE /api/cart/:id',
+                clearCart: 'DELETE /api/cart'
+            },
+            payments: {
+                getPaymentMethods: 'GET /api/payments/methods',
+                getUserPayments: 'GET /api/payments',
+                getPaymentStats: 'GET /api/payments/stats',
+                getPaymentByOrder: 'GET /api/payments/order/:orderId',
+                getPaymentDetails: 'GET /api/payments/:id',
+                createPayment: 'POST /api/payments/create',
+                processCODPayment: 'POST /api/payments/:id/process-cod',
+                processEWalletPayment: 'POST /api/payments/:id/process-ewallet',
+                cancelPayment: 'PUT /api/payments/:id/cancel',
+                refundPayment: 'POST /api/payments/:id/refund',
+                paymentWebhook: 'POST /api/payments/webhook'
+            },
+            cancelRequests: {
+                getUserCancelRequests: 'GET /api/cancel-requests',
+                getCancelRequestStats: 'GET /api/cancel-requests/stats',
+                getPendingRequests: 'GET /api/cancel-requests/admin/pending',
+                getAdminStats: 'GET /api/cancel-requests/admin/stats',
+                getCancelRequestByOrder: 'GET /api/cancel-requests/order/:orderId',
+                getCancelRequestDetails: 'GET /api/cancel-requests/:id',
+                createCancelRequest: 'POST /api/cancel-requests',
+                updateCancelRequest: 'PUT /api/cancel-requests/:id',
+                processRequest: 'POST /api/cancel-requests/:id/process',
+                withdrawCancelRequest: 'DELETE /api/cancel-requests/:id'
             },
             utilities: {
                 health: 'GET /health',
@@ -215,6 +264,10 @@ const startServer = async () => {
         if (!emailConnected) {
             console.warn('⚠️  Email connection failed. Email features may not work properly.');
         }
+        
+        // Start order auto-confirmation job
+        console.log('⏰ Starting order auto-confirmation service...');
+        startAutoConfirmation();
         
         // Start HTTP server
         const server = app.listen(PORT, () => {

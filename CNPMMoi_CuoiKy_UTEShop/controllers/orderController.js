@@ -1,5 +1,6 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const Cart = require('../models/Cart');
 const {
     successResponse,
     errorResponse,
@@ -67,6 +68,56 @@ class OrderController {
 
         } catch (error) {
             console.error('❌ Create order error:', error);
+            return errorResponse(res, error.message || ERROR_MESSAGES.INTERNAL_ERROR);
+        }
+    }
+
+    // Create order from cart
+    async createOrderFromCart(req, res) {
+        try {
+            const userId = req.user.id;
+            const { shipping_address, notes, payment_method } = req.body;
+
+            // Validate cart
+            const cartValidation = await Cart.validateCart(userId);
+            if (!cartValidation.is_valid) {
+                return errorResponse(res, 'Giỏ hàng có sản phẩm không hợp lệ. Vui lòng kiểm tra lại.', 400, {
+                    invalid_items: cartValidation.invalid_items
+                });
+            }
+
+            // Get cart items and convert to order format
+            const cartItems = await Cart.getOrderItems(userId);
+            if (cartItems.length === 0) {
+                return errorResponse(res, 'Giỏ hàng trống. Vui lòng thêm sản phẩm trước khi đặt hàng.', 400);
+            }
+
+            // Calculate total amount
+            let total_amount = 0;
+            for (const item of cartItems) {
+                total_amount += item.price * item.quantity;
+            }
+
+            // Create order
+            const order = await Order.create({
+                user_id: userId,
+                total_amount,
+                shipping_address,
+                notes,
+                payment_method: payment_method || 'COD',
+                items: cartItems
+            });
+
+            // Clear cart after successful order creation
+            await Cart.clearCart(userId);
+
+            return createdResponse(res, {
+                order: order.toJSON(),
+                cart_cleared: true
+            }, 'Đơn hàng đã được tạo thành công từ giỏ hàng');
+
+        } catch (error) {
+            console.error('❌ Create order from cart error:', error);
             return errorResponse(res, error.message || ERROR_MESSAGES.INTERNAL_ERROR);
         }
     }
@@ -203,6 +254,84 @@ class OrderController {
 
         } catch (error) {
             console.error('❌ Get user order stats error:', error);
+            return errorResponse(res, error.message || ERROR_MESSAGES.INTERNAL_ERROR);
+        }
+    }
+
+    // Get order tracking history
+    async getOrderTracking(req, res) {
+        try {
+            const orderId = req.params.id;
+            const userId = req.user.id;
+
+            // Get order and verify ownership
+            const order = await Order.findById(orderId);
+            if (!order) {
+                return notFoundResponse(res, 'Đơn hàng không tồn tại');
+            }
+
+            if (order.user_id !== userId) {
+                return errorResponse(res, 'Bạn không có quyền xem thông tin này', 403);
+            }
+
+            // Get tracking history
+            const tracking = await Order.getOrderTracking(orderId, userId);
+
+            return successResponse(res, {
+                order: order.toJSON(),
+                tracking: tracking,
+                message: 'Lấy thông tin theo dõi đơn hàng thành công'
+            });
+
+        } catch (error) {
+            console.error('❌ Get order tracking error:', error);
+            return errorResponse(res, error.message || ERROR_MESSAGES.INTERNAL_ERROR);
+        }
+    }
+
+    // Update order status (Enhanced)
+    async updateOrderStatus(req, res) {
+        try {
+            const orderId = req.params.id;
+            const { status, notes } = req.body;
+            const userId = req.user.id;
+
+            // Note: In real implementation, add admin/staff role check here
+            // For now, allowing any authenticated user for testing
+
+            const updatedOrder = await Order.updateStatus(orderId, status, notes, userId);
+
+            if (!updatedOrder) {
+                return notFoundResponse(res, 'Đơn hàng không tồn tại');
+            }
+
+            return successResponse(res, {
+                order: updatedOrder.toJSON(),
+                message: 'Cập nhật trạng thái đơn hàng thành công'
+            });
+
+        } catch (error) {
+            console.error('❌ Update order status error:', error);
+            return errorResponse(res, error.message || ERROR_MESSAGES.INTERNAL_ERROR);
+        }
+    }
+
+    // Auto-confirm orders (to be called by scheduled job)
+    async autoConfirmOrders(req, res) {
+        try {
+            // Note: This endpoint should be secured and only accessible by system/admin
+            const results = await Order.autoConfirmOrders();
+
+            return successResponse(res, {
+                results,
+                total_processed: results.length,
+                successful: results.filter(r => r.success).length,
+                failed: results.filter(r => !r.success).length,
+                message: 'Tự động xác nhận đơn hàng hoàn thành'
+            });
+
+        } catch (error) {
+            console.error('❌ Auto confirm orders error:', error);
             return errorResponse(res, error.message || ERROR_MESSAGES.INTERNAL_ERROR);
         }
     }

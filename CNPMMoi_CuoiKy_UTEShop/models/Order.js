@@ -10,9 +10,13 @@ class Order {
         this.notes = orderData.notes;
         this.created_at = orderData.created_at;
         this.updated_at = orderData.updated_at;
+        this.confirmed_at = orderData.confirmed_at;
+        this.delivered_at = orderData.delivered_at;
+        this.cancelled_at = orderData.cancelled_at;
         this.items = orderData.items || [];
         this.user_name = orderData.user_name;
         this.user_email = orderData.user_email;
+        this.status_history = orderData.status_history || [];
     }
 
     // Create new order
@@ -30,10 +34,10 @@ class Order {
             await connection.beginTransaction();
 
             try {
-                // Insert order
+                // Insert order with 'new' status
                 const [orderResult] = await connection.execute(
-                    'INSERT INTO orders (user_id, total_amount, shipping_address, notes) VALUES (?, ?, ?, ?)',
-                    [user_id, total_amount, shipping_address, notes]
+                    'INSERT INTO orders (user_id, total_amount, shipping_address, notes, status) VALUES (?, ?, ?, ?, ?)',
+                    [user_id, total_amount, shipping_address, notes, 'new']
                 );
                 const orderId = orderResult.insertId;
 
@@ -51,8 +55,15 @@ class Order {
                     );
                 }
 
+                // Add initial status history
+                await connection.execute(
+                    'INSERT INTO order_status_history (order_id, to_status, reason) VALUES (?, ?, ?)',
+                    [orderId, 'new', 'Đơn hàng được tạo']
+                );
+
                 // Commit transaction
                 await connection.commit();
+                console.log(`✅ Order created successfully with ID: ${orderId}`);
 
                 // Return created order
                 return await Order.findById(orderId);
@@ -91,7 +102,16 @@ class Order {
                 [id]
             );
 
+            // Get status history
+            const statusHistory = await executeQuery(
+                `SELECT * FROM order_status_history 
+                 WHERE order_id = ? 
+                 ORDER BY created_at ASC`,
+                [id]
+            );
+
             orderData.items = items;
+            orderData.status_history = statusHistory;
             return new Order(orderData);
         } catch (error) {
             console.error('❌ Error finding order by ID:', error);
@@ -99,30 +119,46 @@ class Order {
         }
     }
 
-    // Get user's orders
-    static async getUserOrders(userId, page = 1, limit = 10) {
+    // Get user's orders with enhanced filtering
+    static async getUserOrders(userId, options = {}) {
         try {
+            const {
+                page = 1,
+                limit = 10,
+                status = null,
+                order_by = 'created_at',
+                order_dir = 'DESC'
+            } = options;
+
             const offset = (page - 1) * limit;
+
+            let whereConditions = ['o.user_id = ?'];
+            let queryParams = [userId];
+
+            if (status) {
+                whereConditions.push('o.status = ?');
+                queryParams.push(status);
+            }
+
+            const whereClause = whereConditions.join(' AND ');
 
             // Get total count
             const countResult = await getOne(
-                'SELECT COUNT(*) as total FROM orders WHERE user_id = ?',
-                [userId]
+                `SELECT COUNT(*) as total FROM orders o WHERE ${whereClause}`,
+                queryParams
             );
             const total = countResult.total;
 
             // Get orders
-            const limitInt = parseInt(limit);
-            const offsetInt = parseInt(offset);
             const orders = await executeQuery(
                 `SELECT o.*, COUNT(oi.id) as item_count
                  FROM orders o
                  LEFT JOIN order_items oi ON o.id = oi.order_id
-                 WHERE o.user_id = ?
+                 WHERE ${whereClause}
                  GROUP BY o.id
-                 ORDER BY o.created_at DESC
-                 LIMIT ${limitInt} OFFSET ${offsetInt}`,
-                [userId]
+                 ORDER BY o.${order_by} ${order_dir}
+                 LIMIT ? OFFSET ?`,
+                [...queryParams, limit, offset]
             );
 
             // Get items for each order
@@ -140,10 +176,10 @@ class Order {
             return {
                 orders: orders.map(order => new Order(order)),
                 pagination: {
-                    page,
-                    limit,
+                    current_page: page,
+                    per_page: limit,
                     total,
-                    totalPages: Math.ceil(total / limit)
+                    total_pages: Math.ceil(total / limit)
                 }
             };
         } catch (error) {
@@ -152,18 +188,154 @@ class Order {
         }
     }
 
-    // Update order status
-    static async updateStatus(orderId, status) {
+    // Update order status with history tracking
+    static async updateStatus(orderId, status, notes = null, userId = null) {
+        const { pool } = require('../config/database');
+        let connection;
+
         try {
-            await executeQuery(
-                'UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-                [status, orderId]
-            );
-            return await Order.findById(orderId);
+            // Validate status
+            const validStatuses = ['new', 'confirmed', 'preparing', 'shipping', 'delivered', 'cancelled', 'cancel_requested'];
+            if (!validStatuses.includes(status)) {
+                throw new Error('Trạng thái đơn hàng không hợp lệ');
+            }
+
+            connection = await pool.getConnection();
+            await connection.beginTransaction();
+
+            try {
+                // Get current order
+                const [currentOrder] = await connection.execute(
+                    'SELECT * FROM orders WHERE id = ?',
+                    [orderId]
+                );
+
+                if (!currentOrder.length) {
+                    throw new Error('Đơn hàng không tồn tại');
+                }
+
+                const order = currentOrder[0];
+
+                // Validate status transition
+                const canTransition = Order.canTransitionTo(order.status, status);
+                if (!canTransition) {
+                    throw new Error(`Không thể chuyển từ trạng thái "${order.status}" sang "${status}"`);
+                }
+
+                // Update order status and timestamps
+                let updateFields = ['status = ?', 'updated_at = CURRENT_TIMESTAMP'];
+                let updateParams = [status];
+
+                if (status === 'confirmed') {
+                    updateFields.push('confirmed_at = CURRENT_TIMESTAMP');
+                } else if (status === 'delivered') {
+                    updateFields.push('delivered_at = CURRENT_TIMESTAMP');
+                } else if (status === 'cancelled') {
+                    updateFields.push('cancelled_at = CURRENT_TIMESTAMP');
+                }
+
+                updateParams.push(orderId);
+
+                await connection.execute(
+                    `UPDATE orders SET ${updateFields.join(', ')} WHERE id = ?`,
+                    updateParams
+                );
+
+                // Add status history
+                await connection.execute(
+                    'INSERT INTO order_status_history (order_id, from_status, to_status, reason, updated_by) VALUES (?, ?, ?, ?, ?)',
+                    [orderId, null, status, notes || `Chuyển sang trạng thái ${status}`, 'system']
+                );
+
+                await connection.commit();
+
+                return await Order.findById(orderId);
+            } catch (error) {
+                await connection.rollback();
+                throw error;
+            }
         } catch (error) {
             console.error('❌ Error updating order status:', error);
-            throw new Error('Lỗi cập nhật trạng thái đơn hàng');
+            throw new Error(error.message || 'Lỗi cập nhật trạng thái đơn hàng');
+        } finally {
+            if (connection) connection.release();
         }
+    }
+
+    // Check if status transition is valid
+    static canTransitionTo(currentStatus, newStatus) {
+        const transitions = {
+            'new': ['confirmed', 'cancelled', 'cancel_requested'],
+            'confirmed': ['preparing', 'cancelled', 'cancel_requested'],
+            'preparing': ['shipping', 'cancelled'],
+            'shipping': ['delivered', 'cancelled'],
+            'delivered': [], // Final state
+            'cancelled': [], // Final state
+            'cancel_requested': ['cancelled', 'confirmed'] // Can be approved or rejected
+        };
+
+        return transitions[currentStatus]?.includes(newStatus) || false;
+    }
+
+    // Get orders that need auto-confirmation (created > 30 minutes ago, still 'new')
+    static async getOrdersForAutoConfirmation() {
+        try {
+            const orders = await executeQuery(
+                `SELECT id FROM orders 
+                 WHERE status = 'new' 
+                 AND created_at <= DATE_SUB(NOW(), INTERVAL 30 MINUTE)`,
+                []
+            );
+
+            return orders.map(order => order.id);
+        } catch (error) {
+            console.error('❌ Error getting orders for auto-confirmation:', error);
+            throw new Error('Lỗi lấy đơn hàng cần tự động xác nhận');
+        }
+    }
+
+    // Auto-confirm orders (to be called by scheduled job)
+    static async autoConfirmOrders() {
+        try {
+            const orderIds = await Order.getOrdersForAutoConfirmation();
+            const results = [];
+
+            for (const orderId of orderIds) {
+                try {
+                    const updatedOrder = await Order.updateStatus(
+                        orderId, 
+                        'confirmed', 
+                        'Tự động xác nhận sau 30 phút'
+                    );
+                    results.push({ orderId, success: true, order: updatedOrder });
+                } catch (error) {
+                    results.push({ orderId, success: false, error: error.message });
+                }
+            }
+
+            return results;
+        } catch (error) {
+            console.error('❌ Error auto-confirming orders:', error);
+            throw new Error('Lỗi tự động xác nhận đơn hàng');
+        }
+    }
+
+    // Check if order can be cancelled by user
+    canBeCancelledByUser() {
+        // Users can request cancellation within 30 minutes for 'new' and 'confirmed' orders
+        const cancellableStatuses = ['new', 'confirmed'];
+        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+        const orderTime = new Date(this.created_at);
+
+        return cancellableStatuses.includes(this.status) && orderTime > thirtyMinutesAgo;
+    }
+
+    // Check if order can be cancelled immediately (within cancellation window)
+    canBeCancelledImmediately() {
+        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+        const orderTime = new Date(this.created_at);
+
+        return this.status === 'new' && orderTime > thirtyMinutesAgo;
     }
 
     // Get order statistics for user
@@ -172,11 +344,13 @@ class Order {
             const stats = await getOne(
                 `SELECT 
                     COUNT(*) as total_orders,
-                    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_orders,
+                    SUM(CASE WHEN status = 'new' THEN 1 ELSE 0 END) as new_orders,
                     SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END) as confirmed_orders,
+                    SUM(CASE WHEN status = 'preparing' THEN 1 ELSE 0 END) as preparing_orders,
                     SUM(CASE WHEN status = 'shipping' THEN 1 ELSE 0 END) as shipping_orders,
                     SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered_orders,
                     SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_orders,
+                    SUM(CASE WHEN status = 'cancel_requested' THEN 1 ELSE 0 END) as cancel_requested_orders,
                     SUM(total_amount) as total_spent
                  FROM orders 
                  WHERE user_id = ?`,
@@ -189,16 +363,62 @@ class Order {
         }
     }
 
+    // Track order status history
+    static async getOrderTracking(orderId, userId = null) {
+        try {
+            // If userId provided, verify ownership
+            if (userId) {
+                const order = await getOne(
+                    'SELECT user_id FROM orders WHERE id = ?',
+                    [orderId]
+                );
+                
+                if (!order || order.user_id !== userId) {
+                    throw new Error('Đơn hàng không tồn tại hoặc bạn không có quyền truy cập');
+                }
+            }
+
+            const tracking = await executeQuery(
+                `SELECT osh.*
+                 FROM order_status_history osh
+                 WHERE osh.order_id = ?
+                 ORDER BY osh.created_at ASC`,
+                [orderId]
+            );
+
+            return tracking;
+        } catch (error) {
+            console.error('❌ Error getting order tracking:', error);
+            throw new Error(error.message || 'Lỗi lấy thông tin theo dõi đơn hàng');
+        }
+    }
+
     // Get status text in Vietnamese
     getStatusText() {
         const statusMap = {
-            'pending': 'Chờ xác nhận',
+            'new': 'Đơn hàng mới',
             'confirmed': 'Đã xác nhận',
+            'preparing': 'Đang chuẩn bị',
             'shipping': 'Đang giao hàng',
             'delivered': 'Đã giao hàng',
-            'cancelled': 'Đã hủy'
+            'cancelled': 'Đã hủy',
+            'cancel_requested': 'Yêu cầu hủy'
         };
         return statusMap[this.status] || this.status;
+    }
+
+    // Get status color for UI
+    getStatusColor() {
+        const colorMap = {
+            'new': 'blue',
+            'confirmed': 'green',
+            'preparing': 'yellow',
+            'shipping': 'purple',
+            'delivered': 'green',
+            'cancelled': 'red',
+            'cancel_requested': 'orange'
+        };
+        return colorMap[this.status] || 'gray';
     }
 
     // Calculate total items
@@ -216,12 +436,19 @@ class Order {
             total_amount: this.total_amount,
             status: this.status,
             status_text: this.getStatusText(),
+            status_color: this.getStatusColor(),
             shipping_address: this.shipping_address,
             notes: this.notes,
             items: this.items,
             total_items: this.getTotalItems(),
+            status_history: this.status_history,
+            can_be_cancelled_by_user: this.canBeCancelledByUser(),
+            can_be_cancelled_immediately: this.canBeCancelledImmediately(),
             created_at: this.created_at,
-            updated_at: this.updated_at
+            updated_at: this.updated_at,
+            confirmed_at: this.confirmed_at,
+            delivered_at: this.delivered_at,
+            cancelled_at: this.cancelled_at
         };
     }
 }
