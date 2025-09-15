@@ -120,46 +120,45 @@ class Order {
     }
 
     // Get user's orders with enhanced filtering
-    static async getUserOrders(userId, options = {}) {
+    static async getUserOrders(userId, page = 1, limit = 10, status = null) {
         try {
-            const {
-                page = 1,
-                limit = 10,
-                status = null,
-                order_by = 'created_at',
-                order_dir = 'DESC'
-            } = options;
+            // Ensure parameters are proper integers
+            const pageNum = parseInt(page) || 1;
+            const limitNum = parseInt(limit) || 10;
+            const offset = (pageNum - 1) * limitNum;
 
-            const offset = (page - 1) * limit;
-
-            let whereConditions = ['o.user_id = ?'];
-            let queryParams = [userId];
-
+            // Get total count first
+            let countSql = `SELECT COUNT(DISTINCT o.id) as total FROM orders o WHERE o.user_id = ?`;
+            let countParams = [userId];
+            
             if (status) {
-                whereConditions.push('o.status = ?');
-                queryParams.push(status);
+                countSql += ` AND o.status = ?`;
+                countParams.push(status);
             }
+            
+            const countResult = await executeQuery(countSql, countParams);
+            const total = countResult[0].total;
 
-            const whereClause = whereConditions.join(' AND ');
+            // Get orders with proper parameter handling
+            let sql = `SELECT o.*, COUNT(oi.id) as item_count
+                       FROM orders o
+                       LEFT JOIN order_items oi ON o.id = oi.order_id
+                       WHERE o.user_id = ?`;
+            
+            let params = [userId];
+            
+            if (status) {
+                sql += ` AND o.status = ?`;
+                params.push(status);
+            }
+            
+            sql += ` GROUP BY o.id
+                     ORDER BY o.created_at DESC
+                     LIMIT ${limitNum} OFFSET ${offset}`;
 
-            // Get total count
-            const countResult = await getOne(
-                `SELECT COUNT(*) as total FROM orders o WHERE ${whereClause}`,
-                queryParams
-            );
-            const total = countResult.total;
-
-            // Get orders
-            const orders = await executeQuery(
-                `SELECT o.*, COUNT(oi.id) as item_count
-                 FROM orders o
-                 LEFT JOIN order_items oi ON o.id = oi.order_id
-                 WHERE ${whereClause}
-                 GROUP BY o.id
-                 ORDER BY o.${order_by} ${order_dir}
-                 LIMIT ? OFFSET ?`,
-                [...queryParams, limit, offset]
-            );
+            console.log('📊 Debug getUserOrders params (without LIMIT/OFFSET):', params);
+            console.log('📊 Debug SQL:', sql);
+            const orders = await executeQuery(sql, params);
 
             // Get items for each order
             for (let order of orders) {
@@ -176,10 +175,10 @@ class Order {
             return {
                 orders: orders.map(order => new Order(order)),
                 pagination: {
-                    current_page: page,
-                    per_page: limit,
+                    current_page: pageNum,
+                    per_page: limitNum,
                     total,
-                    total_pages: Math.ceil(total / limit)
+                    total_pages: Math.ceil(total / limitNum)
                 }
             };
         } catch (error) {
