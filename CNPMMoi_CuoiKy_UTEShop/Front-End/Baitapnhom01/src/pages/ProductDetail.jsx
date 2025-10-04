@@ -65,10 +65,45 @@ const ProductDetail = () => {
         if (quantity > 1) setQuantity((prev) => prev - 1);
     };
 
-    const handleAddToCart = () => {
-        // Logic thêm vào giỏ hàng
-        alert(`Đã thêm ${quantity} sản phẩm "${product.name}" vào giỏ hàng!`);
+    const handleAddToCart = async () => {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            alert("Bạn chưa đăng nhập!");
+            navigate("/login");
+            return;
+        }
+
+        if (!product?.id) {
+            alert("Sản phẩm không hợp lệ!");
+            return;
+        }
+
+        try {
+            const res = await axios.post(
+                "http://localhost:3000/api/cart/add",
+                { product_id: product.id, quantity: 1 },
+                { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+            );
+
+            if (res.data.success) {
+                alert("Thêm vào giỏ hàng thành công!");
+
+                navigate("/orders");
+            } else {
+                alert("Thêm vào giỏ hàng thất bại: " + res.data.message);
+            }
+        } catch (err) {
+            console.error("Lỗi khi thêm vào giỏ hàng:", err.response?.data || err.message);
+            alert("Thêm sản phẩm thất bại, vui lòng thử lại.");
+        }
     };
+
+
+
+
+
+
+
 
     const handleBuyNow = () => {
         // Logic mua ngay
@@ -118,11 +153,10 @@ const ProductDetail = () => {
                                     <button
                                         key={index}
                                         onClick={() => setSelectedImage(index)}
-                                        className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
-                                            selectedImage === index
-                                                ? 'border-green-500 shadow-md'
-                                                : 'border-gray-200 hover:border-gray-300'
-                                        }`}
+                                        className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${selectedImage === index
+                                            ? 'border-green-500 shadow-md'
+                                            : 'border-gray-200 hover:border-gray-300'
+                                            }`}
                                     >
                                         <ImageWithFallback
                                             src={image}
@@ -192,12 +226,10 @@ const ProductDetail = () => {
 
                         {/* Stock Status */}
                         <div className="flex items-center space-x-2">
-                            <div className={`w-3 h-3 rounded-full ${
-                                product.is_in_stock ? 'bg-green-500' : 'bg-red-500'
-                            }`}></div>
-                            <span className={`font-medium ${
-                                product.is_in_stock ? 'text-green-600' : 'text-red-600'
-                            }`}>
+                            <div className={`w-3 h-3 rounded-full ${product.is_in_stock ? 'bg-green-500' : 'bg-red-500'
+                                }`}></div>
+                            <span className={`font-medium ${product.is_in_stock ? 'text-green-600' : 'text-red-600'
+                                }`}>
                                 {product.is_in_stock
                                     ? `Còn hàng (${product.stock_quantity} sản phẩm)`
                                     : "Hết hàng"}
@@ -261,23 +293,21 @@ const ProductDetail = () => {
                                 <button
                                     onClick={handleAddToCart}
                                     disabled={!product.is_in_stock}
-                                    className={`w-full py-3 px-6 rounded-lg font-semibold text-white transition-all duration-200 ${
-                                        !product.is_in_stock
-                                            ? 'bg-gray-400 cursor-not-allowed'
-                                            : 'bg-green-600 hover:bg-green-700 hover:shadow-lg transform hover:-translate-y-0.5'
-                                    }`}
+                                    className={`w-full py-3 px-6 rounded-lg font-semibold text-white transition-all duration-200 ${!product.is_in_stock
+                                        ? 'bg-gray-400 cursor-not-allowed'
+                                        : 'bg-green-600 hover:bg-green-700 hover:shadow-lg transform hover:-translate-y-0.5'
+                                        }`}
                                 >
                                     {!product.is_in_stock ? 'Hết hàng' : '🛒 Thêm vào giỏ hàng'}
                                 </button>
-                                
+
                                 <button
                                     onClick={handleBuyNow}
                                     disabled={!product.is_in_stock}
-                                    className={`w-full py-3 px-6 rounded-lg font-semibold border-2 transition-all duration-200 ${
-                                        !product.is_in_stock
-                                            ? 'border-gray-400 text-gray-400 cursor-not-allowed'
-                                            : 'border-green-600 text-green-600 hover:bg-green-600 hover:text-white hover:shadow-lg transform hover:-translate-y-0.5'
-                                    }`}
+                                    className={`w-full py-3 px-6 rounded-lg font-semibold border-2 transition-all duration-200 ${!product.is_in_stock
+                                        ? 'border-gray-400 text-gray-400 cursor-not-allowed'
+                                        : 'border-green-600 text-green-600 hover:bg-green-600 hover:text-white hover:shadow-lg transform hover:-translate-y-0.5'
+                                        }`}
                                 >
                                     {!product.is_in_stock ? 'Không thể mua' : '⚡ Mua ngay'}
                                 </button>
@@ -298,7 +328,7 @@ const ProductDetail = () => {
                                 Xem tất cả →
                             </button>
                         </div>
-                        
+
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                             {related.slice(0, 4).map((item) => (
                                 <div

@@ -175,6 +175,8 @@
 
 ### 8. Thêm nhiều sản phẩm cùng lúc
 
+
+
 **Endpoint:** `POST /api/cart/bulk-add`
 **Description:** Thêm nhiều sản phẩm vào giỏ hàng cùng lúc
 **Authentication:** Required
