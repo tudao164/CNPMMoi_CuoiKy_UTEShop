@@ -88,8 +88,38 @@ GET /api/admin/products?page=1&limit=20&is_active=true&stock_status=low_stock
 
 ### 3. Tạo Sản Phẩm Mới
 
+
+**Trước khi tạo sản phẩm mới, có thể thêm bước upload hình ảnh lên server qua endpoint `/api/admin/uploads` để lấy URL hình ảnh.**
+**Endpoint:** POST http://localhost:3000/api/upload/single
+**Headers:**
+Authorization: Bearer <your_admin_token>
+Content-Type: multipart/form-data
+Key: image
+Type: File
+Value: Chọn file hình ảnh từ máy tính
+Description: Upload hình ảnh sản phẩm
+
+Return
+```json
+{
+    "success": true,
+    "message": "Upload ảnh thành công",
+    "data": {
+        "image_url": "/images/59_3_185007f6d7a04bc48c27427464a1a906_master-1760974240718-223872938.jpg",
+        "filename": "59_3_185007f6d7a04bc48c27427464a1a906_master-1760974240718-223872938.jpg",
+        "size": 341257,
+        "mimetype": "image/jpeg"
+    },
+    "timestamp": "2025-10-20T15:30:40.724Z"
+}
+```
+
+Sau khi upload như trên hình xong có thể vào http://localhost:3000/images/59_3_185007f6d7a04bc48c27427464a1a906_master-1760974240718-223872938.jpg
+Để xem ảnh đã upload thành công.
+
 **Endpoint:** `POST /api/admin/products`
 
+Tạo sản phẩm với link ảnh như ở trên đã làm
 **Request Body:**
 ```json
 {
@@ -99,8 +129,8 @@ GET /api/admin/products?page=1&limit=20&is_active=true&stock_status=low_stock
     "sale_price": 1199.99,
     "stock_quantity": 100,
     "category_id": 1,
-    "image_url": "/images/iphone16pro.jpg",
-    "images": ["/images/iphone16-1.jpg", "/images/iphone16-2.jpg"],
+    "image_url": "/images/59_3_185007f6d7a04bc48c27427464a1a906_master-1760974240718-223872938.jpg",
+    "images": ["/images/59_3_185007f6d7a04bc48c27427464a1a906_master-1760974240718-223872938.jpg"],
     "specifications": {
         "screen": "6.7 inch",
         "chip": "A18 Pro",

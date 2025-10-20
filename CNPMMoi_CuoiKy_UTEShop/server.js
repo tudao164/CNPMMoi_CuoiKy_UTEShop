@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const path = require('path');
 require('dotenv').config();
 
 // Import configurations
@@ -21,6 +22,7 @@ const orderRoutes = require('./routes/orders');
 const cartRoutes = require('./routes/cart');
 const paymentRoutes = require('./routes/payments');
 const cancelRequestRoutes = require('./routes/cancel-requests');
+const uploadRoutes = require('./routes/upload');
 
 // Import admin routes
 const adminProductRoutes = require('./routes/admin/products');
@@ -50,6 +52,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Rate limiting
 app.use(generalLimiter);
 
+// Serve static files (uploaded images)
+app.use('/images', express.static(path.join(__dirname, 'images')));
+
 // Request logging middleware
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - IP: ${req.ip}`);
@@ -75,6 +80,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/cancel-requests', cancelRequestRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Admin routes
 app.use('/api/admin/products', adminProductRoutes);
