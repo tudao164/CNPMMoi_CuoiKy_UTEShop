@@ -27,10 +27,12 @@ CREATE TABLE users (
     phone VARCHAR(20),
     avatar_url VARCHAR(500),
     is_verified BOOLEAN DEFAULT FALSE,
+    is_admin BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_email (email),
-    INDEX idx_is_verified (is_verified)
+    INDEX idx_is_verified (is_verified),
+    INDEX idx_is_admin (is_admin)
 );
 
 -- OTP codes table
@@ -398,10 +400,10 @@ JSON_OBJECT('battery', '120 minutes', 'features', 'Mapping, Scheduling', 'bin_ca
 720, 28, TRUE);
 
 -- Insert sample users for testing
-INSERT INTO users (email, password, full_name, phone, is_verified) VALUES
-('admin@uteshop.com', '$2b$10$8K1p/a9aasdf8wdwq.3/.uK0d6h2kZ0/2.HkUps1rsjsdfaYE6c2', 'Admin User', '0123456789', TRUE),
-('user1@gmail.com', '$2b$10$8K1p/a9aasdf8wdwq.3/.uK0d6h2kZ0/2.HkUps1rsjsdfaYE6c2', 'Nguyen Van A', '0987654321', TRUE),
-('user2@gmail.com', '$2b$10$8K1p/a9aasdf8wdwq.3/.uK0d6h2kZ0/2.HkUps1rsjsdfaYE6c2', 'Tran Thi B', '0901234567', TRUE);
+INSERT INTO users (email, password, full_name, phone, is_verified, is_admin) VALUES
+('admin@uteshop.com', '$2b$10$8K1p/a9aasdf8wdwq.3/.uK0d6h2kZ0/2.HkUps1rsjsdfaYE6c2', 'Admin User', '0123456789', TRUE, TRUE),
+('user1@gmail.com', '$2b$10$8K1p/a9aasdf8wdwq.3/.uK0d6h2kZ0/2.HkUps1rsjsdfaYE6c2', 'Nguyen Van A', '0987654321', TRUE, FALSE),
+('user2@gmail.com', '$2b$10$8K1p/a9aasdf8wdwq.3/.uK0d6h2kZ0/2.HkUps1rsjsdfaYE6c2', 'Tran Thi B', '0901234567', TRUE, FALSE);
 
 -- Insert sample orders for testing
 INSERT INTO orders (user_id, total_amount, status, payment_method, shipping_address, notes) VALUES

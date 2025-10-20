@@ -4,6 +4,7 @@ const userController = require('../controllers/userController');
 const { 
     authenticateToken, 
     requireVerifiedUser,
+    requireAdmin,
     checkResourceOwnership 
 } = require('../middleware/auth');
 const {
@@ -96,7 +97,7 @@ router.post('/update-email',
     userController.updateEmail
 );
 
-// Admin routes (for future use - uncomment when admin system is implemented)
+// Admin routes - Now active with requireAdmin middleware
 
 /**
  * @route   GET /api/user/all
@@ -105,10 +106,10 @@ router.post('/update-email',
  * @header  Authorization: Bearer <token>
  * @query   { page?, limit? }
  */
-// router.get('/all',
-//     requireAdmin,
-//     userController.getAllUsers
-// );
+router.get('/all',
+    requireAdmin,
+    userController.getAllUsers
+);
 
 /**
  * @route   GET /api/user/search
@@ -117,10 +118,10 @@ router.post('/update-email',
  * @header  Authorization: Bearer <token>
  * @query   { q, page?, limit? }
  */
-// router.get('/search',
-//     requireAdmin,
-//     userController.searchUsers
-// );
+router.get('/search',
+    requireAdmin,
+    userController.searchUsers
+);
 
 /**
  * @route   GET /api/user/system-stats
@@ -128,9 +129,9 @@ router.post('/update-email',
  * @access  Private (Admin only)
  * @header  Authorization: Bearer <token>
  */
-// router.get('/system-stats',
-//     requireAdmin,
-//     userController.getSystemUserStats
-// );
+router.get('/system-stats',
+    requireAdmin,
+    userController.getSystemUserStats
+);
 
 module.exports = router;

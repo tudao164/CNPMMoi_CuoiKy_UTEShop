@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/orderController');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { generalLimiter } = require('../middleware/rateLimiter');
 const { validateCreateOrder, validateCreateOrderFromCart, validateOrderId, validateOrderStatus, validatePagination } = require('../middleware/validation');
 
@@ -20,8 +20,8 @@ router.get('/', generalLimiter, validatePagination, orderController.getUserOrder
 // Get user order statistics
 router.get('/stats', generalLimiter, orderController.getUserOrderStats);
 
-// Auto-confirm orders (system endpoint)
-router.post('/auto-confirm', generalLimiter, orderController.autoConfirmOrders);
+// Auto-confirm orders (system endpoint - admin only)
+router.post('/auto-confirm', requireAdmin, generalLimiter, orderController.autoConfirmOrders);
 
 // Get order tracking history
 router.get('/:id/tracking', generalLimiter, validateOrderId, orderController.getOrderTracking);
@@ -32,7 +32,8 @@ router.get('/:id', generalLimiter, validateOrderId, orderController.getOrderById
 // Cancel order (user can only cancel pending orders)
 router.patch('/:id/cancel', generalLimiter, validateOrderId, orderController.cancelOrder);
 
-// Update order status (for admin/system use - you might want to add admin middleware)
-router.patch('/:id/status', generalLimiter, validateOrderId, validateOrderStatus, orderController.updateOrderStatus);
+// Update order status (admin only) - Support both PUT and PATCH
+router.put('/:id/status', requireAdmin, generalLimiter, validateOrderId, validateOrderStatus, orderController.updateOrderStatus);
+router.patch('/:id/status', requireAdmin, generalLimiter, validateOrderId, validateOrderStatus, orderController.updateOrderStatus);
 
 module.exports = router;

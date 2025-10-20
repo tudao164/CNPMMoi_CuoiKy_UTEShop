@@ -146,12 +146,16 @@ const checkResourceOwnership = (resourceUserIdField = 'user_id') => {
     };
 };
 
-// Admin role middleware (for future admin features)
+// Middleware to check if user is admin
 const requireAdmin = (req, res, next) => {
-    // Check if user has admin role (you can add role field to users table)
-    if (!req.user.is_admin) {
-        return forbiddenResponse(res, 'Chỉ admin mới có thể truy cập');
+    if (!req.user) {
+        return unauthorizedResponse(res, ERROR_MESSAGES.TOKEN_REQUIRED);
     }
+    
+    if (!req.user.is_admin) {
+        return forbiddenResponse(res, 'Chỉ admin mới có thể truy cập chức năng này');
+    }
+    
     next();
 };
 

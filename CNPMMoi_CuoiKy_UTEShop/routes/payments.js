@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const PaymentController = require('../controllers/paymentController');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { 
     validateCreatePayment, 
     validateCartItemId 
@@ -90,7 +90,7 @@ router.put('/:id/cancel', PaymentController.cancelPayment);
  * @params  id - Payment ID
  * @body    { refund_amount?: number, refund_reason: string, refund_transaction_id?: string }
  */
-router.post('/:id/refund', PaymentController.refundPayment);
+router.post('/:id/refund', requireAdmin, PaymentController.refundPayment);
 
 /**
  * @route   POST /api/payments/webhook

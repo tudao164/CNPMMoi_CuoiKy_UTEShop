@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const CancelRequestController = require('../controllers/cancelRequestController');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { 
     validateCancelRequest, 
     validateCancelRequestId 
@@ -32,7 +32,7 @@ router.get('/stats', CancelRequestController.getCancelRequestStats);
  * @access  Private (Admin)
  * @query   page, limit, order_by, order_dir
  */
-router.get('/admin/pending', CancelRequestController.getPendingRequests);
+router.get('/admin/pending', requireAdmin, CancelRequestController.getPendingRequests);
 
 /**
  * @route   GET /api/cancel-requests/admin/stats
@@ -40,7 +40,7 @@ router.get('/admin/pending', CancelRequestController.getPendingRequests);
  * @access  Private (Admin)
  * @query   start_date, end_date
  */
-router.get('/admin/stats', CancelRequestController.getAdminStats);
+router.get('/admin/stats', requireAdmin, CancelRequestController.getAdminStats);
 
 /**
  * @route   GET /api/cancel-requests/order/:orderId
@@ -76,13 +76,14 @@ router.post('/', validateCancelRequest, CancelRequestController.createCancelRequ
 router.put('/:id', validateCancelRequestId, CancelRequestController.updateCancelRequest);
 
 /**
- * @route   POST /api/cancel-requests/:id/process
+ * @route   POST|PUT /api/cancel-requests/:id/process
  * @desc    Xử lý yêu cầu hủy đơn - chấp thuận hoặc từ chối (Admin only)
  * @access  Private (Admin)
  * @params  id - Cancel Request ID
  * @body    { status: "approved" | "rejected", admin_notes: string }
  */
-router.post('/:id/process', validateCancelRequestId, CancelRequestController.processRequest);
+router.post('/:id/process', requireAdmin, validateCancelRequestId, CancelRequestController.processRequest);
+router.put('/:id/process', requireAdmin, validateCancelRequestId, CancelRequestController.processRequest);
 
 /**
  * @route   DELETE /api/cancel-requests/:id

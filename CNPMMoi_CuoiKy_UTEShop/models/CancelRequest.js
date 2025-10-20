@@ -208,7 +208,7 @@ class CancelRequest {
                 WHERE ${whereClause}
             `, queryParams);
 
-            // Get cancel requests
+            // Get cancel requests - Use string interpolation for LIMIT/OFFSET
             const requests = await executeQuery(`
                 SELECT 
                     cr.*,
@@ -227,8 +227,8 @@ class CancelRequest {
                 LEFT JOIN users admin ON cr.processed_by = admin.id
                 WHERE ${whereClause}
                 ORDER BY cr.${order_by} ${order_dir}
-                LIMIT ? OFFSET ?
-            `, [...queryParams, limit, offset]);
+                LIMIT ${limit} OFFSET ${offset}
+            `, queryParams);
 
             return {
                 requests: requests.map(req => new CancelRequest(req)),

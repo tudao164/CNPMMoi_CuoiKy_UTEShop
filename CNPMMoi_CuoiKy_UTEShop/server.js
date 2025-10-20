@@ -22,6 +22,11 @@ const cartRoutes = require('./routes/cart');
 const paymentRoutes = require('./routes/payments');
 const cancelRequestRoutes = require('./routes/cancel-requests');
 
+// Import admin routes
+const adminProductRoutes = require('./routes/admin/products');
+const adminUserRoutes = require('./routes/admin/users');
+const adminOrderRoutes = require('./routes/admin/orders');
+
 // Import utilities
 const { errorResponse } = require('./utils/responseHelper');
 const { ERROR_MESSAGES } = require('./utils/constants');
@@ -71,6 +76,11 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/cancel-requests', cancelRequestRoutes);
 
+// Admin routes
+app.use('/api/admin/products', adminProductRoutes);
+app.use('/api/admin/users', adminUserRoutes);
+app.use('/api/admin/orders', adminOrderRoutes);
+
 // Root endpoint
 app.get('/', (req, res) => {
     res.json({
@@ -86,6 +96,11 @@ app.get('/', (req, res) => {
             cart: '/api/cart',
             payments: '/api/payments',
             cancelRequests: '/api/cancel-requests',
+            admin: {
+                products: '/api/admin/products',
+                users: '/api/admin/users',
+                orders: '/api/admin/orders'
+            },
             health: '/health'
         },
         timestamp: new Date().toISOString()
@@ -177,6 +192,35 @@ app.get('/api/docs', (req, res) => {
                 updateCancelRequest: 'PUT /api/cancel-requests/:id',
                 processRequest: 'POST /api/cancel-requests/:id/process',
                 withdrawCancelRequest: 'DELETE /api/cancel-requests/:id'
+            },
+            admin: {
+                products: {
+                    getAllProducts: 'GET /api/admin/products',
+                    getProductStats: 'GET /api/admin/products/stats',
+                    createProduct: 'POST /api/admin/products',
+                    updateProduct: 'PUT /api/admin/products/:id',
+                    deleteProduct: 'DELETE /api/admin/products/:id',
+                    activateProduct: 'PATCH /api/admin/products/:id/activate',
+                    updateStock: 'PATCH /api/admin/products/:id/stock'
+                },
+                users: {
+                    getAllUsers: 'GET /api/admin/users',
+                    getUserStats: 'GET /api/admin/users/stats',
+                    getUserById: 'GET /api/admin/users/:id',
+                    createUser: 'POST /api/admin/users',
+                    updateUser: 'PUT /api/admin/users/:id',
+                    deleteUser: 'DELETE /api/admin/users/:id',
+                    resetPassword: 'PATCH /api/admin/users/:id/password',
+                    toggleAdmin: 'PATCH /api/admin/users/:id/toggle-admin'
+                },
+                orders: {
+                    getAllOrders: 'GET /api/admin/orders',
+                    getOrderStats: 'GET /api/admin/orders/stats',
+                    getOrderDetails: 'GET /api/admin/orders/:id',
+                    updateOrderStatus: 'PATCH /api/admin/orders/:id/status',
+                    exportOrders: 'GET /api/admin/orders/export',
+                    deleteOrder: 'DELETE /api/admin/orders/:id'
+                }
             },
             utilities: {
                 health: 'GET /health',

@@ -10,6 +10,7 @@ class User {
         this.phone = userData.phone;
         this.avatar_url = userData.avatar_url;
         this.is_verified = userData.is_verified;
+        this.is_admin = userData.is_admin || false;
         this.created_at = userData.created_at;
         this.updated_at = userData.updated_at;
     }
@@ -44,7 +45,7 @@ class User {
     static async findById(id) {
         try {
             const userData = await getOne(
-                'SELECT id, email, full_name, phone, avatar_url, is_verified, created_at, updated_at FROM users WHERE id = ?',
+                'SELECT id, email, full_name, phone, avatar_url, is_verified, is_admin, created_at, updated_at FROM users WHERE id = ?',
                 [id]
             );
             return userData ? new User(userData) : null;
@@ -58,7 +59,7 @@ class User {
     static async findByEmail(email) {
         try {
             const userData = await getOne(
-                'SELECT id, email, full_name, phone, avatar_url, is_verified, created_at, updated_at FROM users WHERE email = ?',
+                'SELECT id, email, full_name, phone, avatar_url, is_verified, is_admin, created_at, updated_at FROM users WHERE email = ?',
                 [email]
             );
             return userData ? new User(userData) : null;
@@ -185,13 +186,12 @@ class User {
             const countResult = await getOne('SELECT COUNT(*) as total FROM users');
             const total = countResult.total;
 
-            // Get users
+            // Get users - use string interpolation for LIMIT/OFFSET
             const users = await executeQuery(
-                `SELECT id, email, full_name, phone, avatar_url, is_verified, created_at, updated_at 
+                `SELECT id, email, full_name, phone, avatar_url, is_verified, is_admin, created_at, updated_at 
                  FROM users 
                  ORDER BY created_at DESC 
-                 LIMIT ? OFFSET ?`,
-                [limit, offset]
+                 LIMIT ${limit} OFFSET ${offset}`
             );
 
             return {
@@ -222,14 +222,14 @@ class User {
             );
             const total = countResult.total;
 
-            // Get users
+            // Get users - use string interpolation for LIMIT/OFFSET
             const users = await executeQuery(
-                `SELECT id, email, full_name, phone, avatar_url, is_verified, created_at, updated_at 
+                `SELECT id, email, full_name, phone, avatar_url, is_verified, is_admin, created_at, updated_at 
                  FROM users 
                  WHERE email LIKE ? OR full_name LIKE ?
                  ORDER BY created_at DESC 
-                 LIMIT ? OFFSET ?`,
-                [searchPattern, searchPattern, limit, offset]
+                 LIMIT ${limit} OFFSET ${offset}`,
+                [searchPattern, searchPattern]
             );
 
             return {

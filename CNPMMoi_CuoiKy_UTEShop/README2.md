@@ -351,9 +351,9 @@ i### 1. Tạo đơn hàng từ giỏ hàng
 
 ### 3. Cập nhật trạng thái đơn hàng (Admin)
 
-**Endpoint:** `PUT /api/orders/:id/status`
+**Endpoint:** `PUT /api/orders/:id/status` hoặc `PATCH /api/orders/:id/status`
 **Description:** Cập nhật trạng thái đơn hàng (chỉ admin)
-**Authentication:** Required (Admin)
+**Authentication:** Required (Admin - requires `is_admin = TRUE`)
 
 **Request Body:**
 ```json
@@ -565,9 +565,9 @@ i### 1. Tạo đơn hàng từ giỏ hàng
 
 ### 5. Xử lý yêu cầu hủy đơn (Admin)
 
-**Endpoint:** `PUT /api/cancel-requests/:id/process`
+**Endpoint:** `PUT /api/cancel-requests/:id/process` hoặc `POST /api/cancel-requests/:id/process`
 **Description:** Xử lý yêu cầu hủy đơn (chấp thuận/từ chối) - chỉ admin
-**Authentication:** Required (Admin)
+**Authentication:** Required (Admin - requires `is_admin = TRUE`)
 
 **Request Body:**
 ```json
