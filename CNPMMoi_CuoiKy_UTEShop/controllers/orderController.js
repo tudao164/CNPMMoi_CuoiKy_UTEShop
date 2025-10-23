@@ -1,6 +1,7 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Cart = require('../models/Cart');
+const Coupon = require('../models/Coupon');
 const {
     successResponse,
     errorResponse,
@@ -18,7 +19,7 @@ class OrderController {
     async createOrder(req, res) {
         try {
             const userId = req.user.id;
-            const { items, shipping_address, notes } = req.body;
+            const { items, shipping_address, notes, coupon_code } = req.body;
 
             // Validate items
             if (!items || !Array.isArray(items) || items.length === 0) {
@@ -26,7 +27,7 @@ class OrderController {
             }
 
             // Validate and calculate total
-            let total_amount = 0;
+            let subtotal_amount = 0;
             const validatedItems = [];
 
             for (const item of items) {
@@ -50,20 +51,52 @@ class OrderController {
                     price: price
                 });
 
-                total_amount += price * item.quantity;
+                subtotal_amount += price * item.quantity;
+            }
+
+            // Handle coupon if provided
+            let coupon_id = null;
+            let discount_amount = 0;
+            let total_amount = subtotal_amount;
+
+            if (coupon_code) {
+                const couponValidation = await Coupon.validate(coupon_code, userId, { items: validatedItems });
+                
+                if (!couponValidation.valid) {
+                    return errorResponse(res, couponValidation.message, 400);
+                }
+
+                coupon_id = couponValidation.coupon_id;
+                discount_amount = couponValidation.discount_amount;
+                total_amount = couponValidation.final_amount;
             }
 
             // Create order
             const order = await Order.create({
                 user_id: userId,
                 total_amount,
+                subtotal_amount,
+                discount_amount,
+                coupon_id,
+                coupon_code: coupon_code ? coupon_code.toUpperCase() : null,
                 shipping_address,
                 notes,
                 items: validatedItems
             });
 
+            // Record coupon usage if coupon was applied
+            if (coupon_id) {
+                await Coupon.recordUsage(coupon_id, userId, order.id, discount_amount);
+            }
+
             return createdResponse(res, {
-                order: order.toJSON()
+                order: order.toJSON(),
+                applied_coupon: coupon_code ? {
+                    code: coupon_code.toUpperCase(),
+                    discount_amount,
+                    subtotal_amount,
+                    total_amount
+                } : null
             }, 'Đơn hàng đã được tạo thành công');
 
         } catch (error) {
@@ -76,7 +109,7 @@ class OrderController {
     async createOrderFromCart(req, res) {
         try {
             const userId = req.user.id;
-            const { shipping_address, notes, payment_method } = req.body;
+            const { shipping_address, notes, payment_method, coupon_code } = req.body;
 
             // Validate cart
             const cartValidation = await Cart.validateCart(userId);
@@ -92,28 +125,60 @@ class OrderController {
                 return errorResponse(res, 'Giỏ hàng trống. Vui lòng thêm sản phẩm trước khi đặt hàng.', 400);
             }
 
-            // Calculate total amount
-            let total_amount = 0;
+            // Calculate subtotal amount
+            let subtotal_amount = 0;
             for (const item of cartItems) {
-                total_amount += item.price * item.quantity;
+                subtotal_amount += item.price * item.quantity;
+            }
+
+            // Handle coupon if provided
+            let coupon_id = null;
+            let discount_amount = 0;
+            let total_amount = subtotal_amount;
+
+            if (coupon_code) {
+                const couponValidation = await Coupon.validate(coupon_code, userId, { items: cartItems });
+                
+                if (!couponValidation.valid) {
+                    return errorResponse(res, couponValidation.message, 400);
+                }
+
+                coupon_id = couponValidation.coupon_id;
+                discount_amount = couponValidation.discount_amount;
+                total_amount = couponValidation.final_amount;
             }
 
             // Create order
             const order = await Order.create({
                 user_id: userId,
                 total_amount,
+                subtotal_amount,
+                discount_amount,
+                coupon_id,
+                coupon_code: coupon_code ? coupon_code.toUpperCase() : null,
                 shipping_address,
                 notes,
                 payment_method: payment_method || 'COD',
                 items: cartItems
             });
 
+            // Record coupon usage if coupon was applied
+            if (coupon_id) {
+                await Coupon.recordUsage(coupon_id, userId, order.id, discount_amount);
+            }
+
             // Clear cart after successful order creation
             await Cart.clearCart(userId);
 
             return createdResponse(res, {
                 order: order.toJSON(),
-                cart_cleared: true
+                cart_cleared: true,
+                applied_coupon: coupon_code ? {
+                    code: coupon_code.toUpperCase(),
+                    discount_amount,
+                    subtotal_amount,
+                    total_amount
+                } : null
             }, 'Đơn hàng đã được tạo thành công từ giỏ hàng');
 
         } catch (error) {

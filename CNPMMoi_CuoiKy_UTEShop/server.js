@@ -23,11 +23,16 @@ const cartRoutes = require('./routes/cart');
 const paymentRoutes = require('./routes/payments');
 const cancelRequestRoutes = require('./routes/cancel-requests');
 const uploadRoutes = require('./routes/upload');
+const reviewRoutes = require('./routes/reviews');
+const couponRoutes = require('./routes/coupons');
 
 // Import admin routes
 const adminProductRoutes = require('./routes/admin/products');
 const adminUserRoutes = require('./routes/admin/users');
 const adminOrderRoutes = require('./routes/admin/orders');
+const adminDashboardRoutes = require('./routes/admin/dashboard');
+const adminReviewRoutes = require('./routes/admin/reviews');
+const adminCouponRoutes = require('./routes/admin/coupons');
 
 // Import utilities
 const { errorResponse } = require('./utils/responseHelper');
@@ -81,11 +86,16 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/cancel-requests', cancelRequestRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/coupons', couponRoutes);
 
 // Admin routes
 app.use('/api/admin/products', adminProductRoutes);
 app.use('/api/admin/users', adminUserRoutes);
 app.use('/api/admin/orders', adminOrderRoutes);
+app.use('/api/admin/dashboard', adminDashboardRoutes);
+app.use('/api/admin/reviews', adminReviewRoutes);
+app.use('/api/admin/coupons', adminCouponRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
