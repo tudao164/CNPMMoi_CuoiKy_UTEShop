@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
+import Layout from '@/components/Layout';
 
 // Pages
 import HomePage from '@/pages/HomePage';
@@ -84,7 +85,7 @@ function App() {
       />
 
       <Routes>
-        {/* Public Routes */}
+        {/* Auth Routes - No Layout */}
         <Route
           path="/login"
           element={
@@ -112,99 +113,109 @@ function App() {
         />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-        {/* Protected Routes */}
+        {/* All other routes with Layout */}
         <Route
-          path="/"
+          path="/*"
           element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          }
-        />
+            <Layout>
+              <Routes>
+                {/* Protected Routes */}
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <HomePage />
+                    </ProtectedRoute>
+                  }
+                />
 
-        {/* Shop Home - Public */}
-        <Route path="/shop" element={<ShopHomePage />} />
+                {/* Shop Home - Public */}
+                <Route path="/shop" element={<ShopHomePage />} />
 
-        {/* Product Routes - Public */}
-        <Route path="/products" element={<ProductListPage />} />
-        <Route path="/products/search" element={<ProductSearchPage />} />
-        <Route path="/products/category/:categoryId" element={<CategoryProductsPage />} />
-        <Route path="/products/:id" element={<ProductDetailPage />} />
+                {/* Product Routes - Public */}
+                <Route path="/products" element={<ProductListPage />} />
+                <Route path="/products/search" element={<ProductSearchPage />} />
+                <Route path="/products/category/:categoryId" element={<CategoryProductsPage />} />
+                <Route path="/products/:id" element={<ProductDetailPage />} />
 
-        {/* Cart Route - Protected */}
-        <Route
-          path="/cart"
-          element={
-            <ProtectedRoute>
-              <CartPage />
-            </ProtectedRoute>
-          }
-        />
+                {/* Cart Route - Protected */}
+                <Route
+                  path="/cart"
+                  element={
+                    <ProtectedRoute>
+                      <CartPage />
+                    </ProtectedRoute>
+                  }
+                />
 
-        {/* Checkout Route - Protected */}
-        <Route
-          path="/checkout"
-          element={
-            <ProtectedRoute>
-              <CheckoutPage />
-            </ProtectedRoute>
-          }
-        />
+                {/* Checkout Route - Protected */}
+                <Route
+                  path="/checkout"
+                  element={
+                    <ProtectedRoute>
+                      <CheckoutPage />
+                    </ProtectedRoute>
+                  }
+                />
 
-        {/* Order Routes - Protected */}
-        <Route
-          path="/orders"
-          element={
-            <ProtectedRoute>
-              <OrderListPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/orders/:id"
-          element={
-            <ProtectedRoute>
-              <OrderDetailPage />
-            </ProtectedRoute>
-          }
-        />
+                {/* Order Routes - Protected */}
+                <Route
+                  path="/orders"
+                  element={
+                    <ProtectedRoute>
+                      <OrderListPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/orders/:id"
+                  element={
+                    <ProtectedRoute>
+                      <OrderDetailPage />
+                    </ProtectedRoute>
+                  }
+                />
 
-        {/* User Management Routes */}
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/change-password"
-          element={
-            <ProtectedRoute>
-              <ChangePasswordPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/stats"
-          element={
-            <ProtectedRoute>
-              <StatsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/delete-account"
-          element={
-            <ProtectedRoute>
-              <DeleteAccountPage />
-            </ProtectedRoute>
-          }
-        />
+                {/* User Management Routes */}
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/change-password"
+                  element={
+                    <ProtectedRoute>
+                      <ChangePasswordPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/stats"
+                  element={
+                    <ProtectedRoute>
+                      <StatsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/delete-account"
+                  element={
+                    <ProtectedRoute>
+                      <DeleteAccountPage />
+                    </ProtectedRoute>
+                  }
+                />
 
-        {/* 404 Not Found */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+                {/* 404 Not Found */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Layout>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
