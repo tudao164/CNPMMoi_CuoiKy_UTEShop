@@ -114,7 +114,6 @@ export default function ProductListPage() {
               className="text-2xl font-bold text-primary-600 cursor-pointer"
               onClick={() => navigate('/')}
             >
-              UTEShop
             </h1>
             <button
               onClick={() => navigate('/')}

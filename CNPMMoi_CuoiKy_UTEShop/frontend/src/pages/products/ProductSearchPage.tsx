@@ -86,7 +86,6 @@ export default function ProductSearchPage() {
               className="text-2xl font-bold text-primary-600 cursor-pointer whitespace-nowrap"
               onClick={() => navigate('/')}
             >
-              UTEShop
             </h1>
 
             {/* Search Bar */}
