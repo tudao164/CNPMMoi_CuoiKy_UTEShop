@@ -83,3 +83,21 @@ export const SUCCESS_MESSAGES = {
   RESET_PASSWORD_SUCCESS: 'Đặt lại mật khẩu thành công!',
   RESEND_OTP_SUCCESS: 'Đã gửi lại mã OTP',
 };
+
+// Helper function to get full image URL
+export const getImageUrl = (imagePath: string | null | undefined): string => {
+  if (!imagePath) return '/placeholder-product.png';
+  
+  // If already a full URL, return as is
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  
+  // If starts with /, prepend base URL
+  if (imagePath.startsWith('/')) {
+    return `${API_BASE_URL}${imagePath}`;
+  }
+  
+  // Otherwise, add / and prepend base URL
+  return `${API_BASE_URL}/${imagePath}`;
+};

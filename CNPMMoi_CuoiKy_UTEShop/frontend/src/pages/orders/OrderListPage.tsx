@@ -5,6 +5,7 @@ import { cancelRequestService } from '@/services/cancelRequest.service';
 import { Order } from '@/types/order.types';
 import { CancelRequest } from '@/types/cancelRequest.types';
 import toast from 'react-hot-toast';
+import { getImageUrl } from '@/config/constants';
 
 type TabType = 'orders' | 'cancel-requests';
 
@@ -273,7 +274,7 @@ export default function OrderListPage() {
                             {order.items.map((item, idx) => (
                               <div key={idx} className="flex gap-4 p-3 bg-gray-50 rounded-lg">
                                 <img
-                                  src={item.product_image || 'https://via.placeholder.com/80'}
+                                  src={getImageUrl(item.product_image)}
                                   alt={item.product_name}
                                   className="w-20 h-20 object-cover rounded border"
                                 />

@@ -5,6 +5,7 @@ export interface User {
   phone: string | null;
   avatar_url?: string;
   is_verified: boolean;
+  is_admin?: boolean;
   created_at: string;
   updated_at?: string;
 }

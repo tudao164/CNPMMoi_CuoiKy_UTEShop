@@ -1,4 +1,5 @@
 import { CartItem } from '@/types/cart.types';
+import { getImageUrl } from '@/config/constants';
 
 interface CartItemCardProps {
   item: CartItem;
@@ -22,7 +23,7 @@ export default function CartItemCard({ item, onUpdateQuantity, onRemove, isLoadi
       {/* Product Image */}
       <div className="w-24 h-24 flex-shrink-0">
         <img
-          src={item.product_image}
+          src={getImageUrl(item.product_image)}
           alt={item.product_name}
           className="w-full h-full object-cover rounded"
           onError={(e) => {

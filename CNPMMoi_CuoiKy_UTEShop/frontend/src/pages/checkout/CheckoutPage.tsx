@@ -5,6 +5,7 @@ import { couponService } from '@/services/coupon.service';
 import { orderService } from '@/services/order.service';
 import { ValidateCouponResponse } from '@/types/coupon.types';
 import toast from 'react-hot-toast';
+import { getImageUrl } from '@/config/constants';
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
@@ -316,7 +317,7 @@ export default function CheckoutPage() {
                   {cart.items.map((item) => (
                     <div key={item.id} className="flex gap-3">
                       <img
-                        src={item.product_image}
+                        src={getImageUrl(item.product_image)}
                         alt={item.product_name}
                         className="w-16 h-16 object-cover rounded"
                         onError={(e) => {

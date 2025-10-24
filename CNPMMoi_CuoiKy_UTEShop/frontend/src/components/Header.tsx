@@ -65,6 +65,15 @@ export default function Header() {
           <div className="flex items-center gap-4 whitespace-nowrap">
             {isAuthenticated && user ? (
               <>
+                {user.is_admin && (
+                  <button
+                    onClick={() => navigate('/admin/dashboard')}
+                    className="relative text-gray-700 hover:text-primary-600 p-2"
+                    title="Admin Panel"
+                  >
+                    <span className="text-2xl">🔐</span>
+                  </button>
+                )}
                 <button
                   onClick={() => navigate('/cart')}
                   className="relative text-gray-700 hover:text-primary-600 p-2"

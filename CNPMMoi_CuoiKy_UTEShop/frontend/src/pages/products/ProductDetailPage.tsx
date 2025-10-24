@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/authStore';
 import { ProductDetail } from '@/types/product.types';
 import ProductCard from '@/components/ProductCard';
 import toast from 'react-hot-toast';
+import { getImageUrl } from '@/config/constants';
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -203,7 +204,7 @@ export default function ProductDetailPage() {
             {/* Main Image */}
             <div className="bg-white rounded-lg overflow-hidden mb-4 aspect-square">
               <img
-                src={images[selectedImage] || '/placeholder-product.png'}
+                src={getImageUrl(images[selectedImage])}
                 alt={product.name}
                 className="w-full h-full object-cover"
               />
@@ -223,7 +224,7 @@ export default function ProductDetailPage() {
                     }`}
                   >
                     <img
-                      src={image || '/placeholder-product.png'}
+                      src={getImageUrl(image)}
                       alt={`${product.name} ${index + 1}`}
                       className="w-full h-full object-cover"
                     />

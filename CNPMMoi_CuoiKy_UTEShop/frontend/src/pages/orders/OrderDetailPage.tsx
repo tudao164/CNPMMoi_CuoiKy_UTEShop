@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { orderService } from '@/services/order.service';
 import { Order, OrderTracking } from '@/types/order.types';
 import toast from 'react-hot-toast';
+import { getImageUrl } from '@/config/constants';
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -177,7 +178,7 @@ export default function OrderDetailPage() {
                       {order.items.map((item, index) => (
                         <div key={index} className="flex gap-4 pb-4 border-b last:border-b-0">
                           <img
-                            src={item.product_image || 'https://via.placeholder.com/80?text=No+Image'}
+                            src={getImageUrl(item.product_image)}
                             alt={item.product_name}
                             className="w-20 h-20 object-cover rounded"
                             onError={(e) => {

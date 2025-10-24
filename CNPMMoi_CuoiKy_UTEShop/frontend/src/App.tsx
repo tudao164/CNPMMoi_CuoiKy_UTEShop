@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
 import Layout from '@/components/Layout';
+import AdminLayout from '@/components/AdminLayout';
 
 // Pages
 import HomePage from '@/pages/HomePage';
@@ -34,12 +35,36 @@ import CheckoutPage from '@/pages/checkout/CheckoutPage';
 import OrderListPage from '@/pages/orders/OrderListPage';
 import OrderDetailPage from '@/pages/orders/OrderDetailPage';
 
+// Admin Pages
+import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
+import AdminProductsPage from '@/pages/admin/AdminProductsPage';
+import AdminProductCreatePage from '@/pages/admin/AdminProductCreatePage';
+import AdminProductEditPage from '@/pages/admin/AdminProductEditPage';
+import AdminOrdersPage from '@/pages/admin/AdminOrdersPage';
+import AdminOrderDetailPage from '@/pages/admin/AdminOrderDetailPage';
+import AdminUsersPage from '@/pages/admin/AdminUsersPage';
+
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+  
+  return <>{children}</>;
+}
+
+// Admin Route Component
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, user } = useAuthStore();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (!user?.is_admin) {
+    return <Navigate to="/shop" replace />;
   }
   
   return <>{children}</>;
@@ -112,6 +137,27 @@ function App() {
           }
         />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+        {/* Admin Routes - Admin Layout */}
+        <Route
+          path="/admin/*"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <Routes>
+                  <Route path="dashboard" element={<AdminDashboardPage />} />
+                  <Route path="products" element={<AdminProductsPage />} />
+                  <Route path="products/create" element={<AdminProductCreatePage />} />
+                  <Route path="products/edit/:id" element={<AdminProductEditPage />} />
+                  <Route path="orders" element={<AdminOrdersPage />} />
+                  <Route path="orders/:id" element={<AdminOrderDetailPage />} />
+                  <Route path="users" element={<AdminUsersPage />} />
+                  <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+                </Routes>
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
 
         {/* All other routes with Layout */}
         <Route

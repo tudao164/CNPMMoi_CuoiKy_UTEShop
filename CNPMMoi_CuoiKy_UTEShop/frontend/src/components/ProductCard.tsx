@@ -4,6 +4,7 @@ import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 import { useState } from 'react';
+import { getImageUrl } from '@/config/constants';
 
 interface ProductCardProps {
   product: Product;
@@ -81,7 +82,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Product Image */}
       <div className="relative overflow-hidden aspect-square">
         <img
-          src={product.image_url || '/placeholder-product.png'}
+          src={getImageUrl(product.image_url)}
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
         />
