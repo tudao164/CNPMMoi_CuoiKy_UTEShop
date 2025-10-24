@@ -19,7 +19,7 @@ export default function AdminProductsPage() {
 
   // Filters
   const [search, setSearch] = useState('');
-  const [isActive, setIsActive] = useState<boolean | undefined>(undefined);
+  const [isActive, setIsActive] = useState<boolean | undefined>(true);
   const [stockStatus, setStockStatus] = useState<string>('');
 
   useEffect(() => {

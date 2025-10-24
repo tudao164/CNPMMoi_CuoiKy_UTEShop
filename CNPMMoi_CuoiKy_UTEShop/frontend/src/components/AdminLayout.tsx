@@ -42,6 +42,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       label: 'Quản lý Đơn hàng',
     },
     {
+      path: '/admin/cancel-requests',
+      icon: '🚫',
+      label: 'Yêu cầu Hủy đơn',
+    },
+    {
       path: '/admin/users',
       icon: '👥',
       label: 'Quản lý Người dùng',

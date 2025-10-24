@@ -43,6 +43,7 @@ import AdminProductEditPage from '@/pages/admin/AdminProductEditPage';
 import AdminOrdersPage from '@/pages/admin/AdminOrdersPage';
 import AdminOrderDetailPage from '@/pages/admin/AdminOrderDetailPage';
 import AdminUsersPage from '@/pages/admin/AdminUsersPage';
+import AdminCancelRequestsPage from '@/pages/admin/AdminCancelRequestsPage';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -152,6 +153,7 @@ function App() {
                   <Route path="orders" element={<AdminOrdersPage />} />
                   <Route path="orders/:id" element={<AdminOrderDetailPage />} />
                   <Route path="users" element={<AdminUsersPage />} />
+                  <Route path="cancel-requests" element={<AdminCancelRequestsPage />} />
                   <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
                 </Routes>
               </AdminLayout>

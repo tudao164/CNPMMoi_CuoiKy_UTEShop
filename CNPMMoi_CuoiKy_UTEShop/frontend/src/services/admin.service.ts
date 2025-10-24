@@ -265,3 +265,58 @@ export const adminOrderService = {
     return response.data;
   },
 };
+
+// Admin Cancel Request Service
+export const adminCancelRequestService = {
+  // Get pending cancel requests
+  getPendingRequests: async (params?: { page?: number; limit?: number }) => {
+    const response = await api.get<{
+      success: boolean;
+      data: {
+        cancel_requests: any[];
+        pagination: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+        };
+      };
+    }>('/api/cancel-requests/admin/pending', { params });
+    return response.data;
+  },
+
+  // Get cancel request stats
+  getStats: async (params?: { start_date?: string; end_date?: string }) => {
+    const response = await api.get<{
+      success: boolean;
+      data: {
+        stats: {
+          total_requests: number;
+          pending_requests: number;
+          approved_requests: number;
+          rejected_requests: number;
+          total_cancelled_amount: number;
+          avg_processing_hours: number;
+          approval_rate: string;
+        };
+      };
+    }>('/api/cancel-requests/admin/stats', { params });
+    return response.data;
+  },
+
+  // Process cancel request
+  processRequest: async (
+    id: number,
+    data: {
+      status: 'approved' | 'rejected';
+      admin_response: string;
+    }
+  ) => {
+    const response = await api.post<{
+      success: boolean;
+      message: string;
+      data: any;
+    }>(`/api/cancel-requests/${id}/process`, data);
+    return response.data;
+  },
+};
