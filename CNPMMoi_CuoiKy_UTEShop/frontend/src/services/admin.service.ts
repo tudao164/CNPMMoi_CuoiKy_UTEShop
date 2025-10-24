@@ -266,6 +266,88 @@ export const adminOrderService = {
   },
 };
 
+// ============ ADMIN COUPONS ============
+export const adminCouponService = {
+  // Get all coupons
+  getCoupons: async (params?: {
+    page?: number;
+    limit?: number;
+    is_active?: boolean;
+    discount_type?: 'percentage' | 'fixed_amount';
+    search?: string;
+  }) => {
+    const response = await api.get<{
+      success: boolean;
+      data: {
+        coupons: any[];
+        pagination: {
+          current_page: number;
+          per_page: number;
+          total: number;
+          total_pages: number;
+        };
+      };
+    }>('/api/admin/coupons', { params });
+    return response.data;
+  },
+
+  // Get coupon by ID
+  getCouponById: async (id: number) => {
+    const response = await api.get<{
+      success: boolean;
+      data: any;
+    }>(`/api/admin/coupons/${id}`);
+    return response.data;
+  },
+
+  // Create coupon
+  createCoupon: async (data: any) => {
+    const response = await api.post<{
+      success: boolean;
+      message: string;
+      data: any;
+    }>('/api/admin/coupons', data);
+    return response.data;
+  },
+
+  // Update coupon
+  updateCoupon: async (id: number, data: any) => {
+    const response = await api.put<{
+      success: boolean;
+      message: string;
+      data: any;
+    }>(`/api/admin/coupons/${id}`, data);
+    return response.data;
+  },
+
+  // Delete coupon
+  deleteCoupon: async (id: number) => {
+    const response = await api.delete<{
+      success: boolean;
+      message: string;
+    }>(`/api/admin/coupons/${id}`);
+    return response.data;
+  },
+
+  // Get coupon statistics
+  getCouponStats: async (id: number) => {
+    const response = await api.get<{
+      success: boolean;
+      data: any;
+    }>(`/api/admin/coupons/${id}/stats`);
+    return response.data;
+  },
+
+  // Get overall statistics
+  getOverallStats: async () => {
+    const response = await api.get<{
+      success: boolean;
+      data: any;
+    }>('/api/admin/coupons/statistics/overview');
+    return response.data;
+  },
+};
+
 // Admin Cancel Request Service
 export const adminCancelRequestService = {
   // Get pending cancel requests

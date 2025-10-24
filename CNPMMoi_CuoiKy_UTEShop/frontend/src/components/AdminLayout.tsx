@@ -47,6 +47,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       label: 'Yêu cầu Hủy đơn',
     },
     {
+      path: '/admin/coupons',
+      icon: '🎟️',
+      label: 'Quản lý Mã giảm giá',
+    },
+    {
       path: '/admin/users',
       icon: '👥',
       label: 'Quản lý Người dùng',
