@@ -5,6 +5,7 @@ import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
 import { ProductDetail } from '@/types/product.types';
 import ProductCard from '@/components/ProductCard';
+import ProductReviews from '@/components/ProductReviews';
 import toast from 'react-hot-toast';
 import { getImageUrl } from '@/config/constants';
 
@@ -373,6 +374,14 @@ export default function ProductDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Product Reviews */}
+        <section>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            📝 Đánh giá sản phẩm
+          </h2>
+          <ProductReviews productId={product.id} />
+        </section>
 
         {/* Related Products */}
         {related_products && related_products.length > 0 && (

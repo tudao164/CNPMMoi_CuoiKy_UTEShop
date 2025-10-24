@@ -18,6 +18,7 @@ import ProfilePage from '@/pages/user/ProfilePage';
 import ChangePasswordPage from '@/pages/user/ChangePasswordPage';
 import StatsPage from '@/pages/user/StatsPage';
 import DeleteAccountPage from '@/pages/user/DeleteAccountPage';
+import MyReviewsPage from '@/pages/user/MyReviewsPage';
 
 // Product Pages
 import ProductListPage from '@/pages/products/ProductListPage';
@@ -254,6 +255,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <StatsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/my-reviews"
+                  element={
+                    <ProtectedRoute>
+                      <MyReviewsPage />
                     </ProtectedRoute>
                   }
                 />

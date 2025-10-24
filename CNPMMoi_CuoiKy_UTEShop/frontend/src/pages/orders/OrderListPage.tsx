@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { orderService } from '@/services/order.service';
 import { cancelRequestService } from '@/services/cancelRequest.service';
+import { reviewService } from '@/services/review.service';
 import { Order } from '@/types/order.types';
 import { CancelRequest } from '@/types/cancelRequest.types';
 import toast from 'react-hot-toast';
 import { getImageUrl } from '@/config/constants';
+import CreateReviewModal from '@/components/CreateReviewModal';
 
 type TabType = 'orders' | 'cancel-requests';
 
@@ -24,6 +26,15 @@ export default function OrderListPage() {
   const [cancelReason, setCancelReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Review modal state
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<{
+    productId: number;
+    productName: string;
+    orderId: number;
+  } | null>(null);
+  const [reviewableProducts, setReviewableProducts] = useState<Record<string, boolean>>({});
+
   const fetchOrders = async (page: number = 1) => {
     setIsLoading(true);
     try {
@@ -35,6 +46,9 @@ export default function OrderListPage() {
         const paginationData = (response as any).pagination;
         setTotalPages(paginationData?.totalPages || 1);
         setCurrentPage(page);
+
+        // Check which products can be reviewed for delivered orders
+        await checkReviewableProducts(ordersData);
       }
     } catch (error: any) {
       console.error('Fetch orders error:', error);
@@ -42,6 +56,43 @@ export default function OrderListPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const checkReviewableProducts = async (orders: Order[]) => {
+    const reviewable: Record<string, boolean> = {};
+    
+    for (const order of orders) {
+      if (order.status === 'delivered' && order.items) {
+        for (const item of order.items) {
+          const key = `${order.id}-${item.product_id}`;
+          try {
+            const response = await reviewService.canReview(item.product_id, order.id);
+            reviewable[key] = response.success && response.data?.can_review === true;
+          } catch (error) {
+            reviewable[key] = false;
+          }
+        }
+      }
+    }
+    
+    setReviewableProducts(reviewable);
+  };
+
+  const handleOpenReviewModal = (productId: number, productName: string, orderId: number) => {
+    setSelectedProduct({ productId, productName, orderId });
+    setShowReviewModal(true);
+  };
+
+  const handleCloseReviewModal = () => {
+    setShowReviewModal(false);
+    setSelectedProduct(null);
+  };
+
+  const handleReviewSuccess = () => {
+    toast.success('Đánh giá của bạn đã được gửi thành công!');
+    handleCloseReviewModal();
+    // Refresh orders to update review status
+    fetchOrders(currentPage);
   };
 
   const fetchCancelRequests = async (page: number = 1) => {
@@ -271,22 +322,41 @@ export default function OrderListPage() {
                         <div className="mb-4">
                           <h4 className="font-semibold text-gray-900 mb-3">Sản phẩm:</h4>
                           <div className="space-y-3">
-                            {order.items.map((item, idx) => (
-                              <div key={idx} className="flex gap-4 p-3 bg-gray-50 rounded-lg">
-                                <img
-                                  src={getImageUrl(item.product_image)}
-                                  alt={item.product_name}
-                                  className="w-20 h-20 object-cover rounded border"
-                                />
-                                <div className="flex-1">
-                                  <h5 className="font-medium text-gray-900">{item.product_name}</h5>
-                                  <p className="text-sm text-gray-600">Số lượng: {item.quantity}</p>
-                                  <p className="text-sm font-semibold text-primary-600 mt-1">
-                                    {formatPrice(typeof item.price === 'number' ? item.price * item.quantity : parseFloat(item.price as any) * item.quantity)}
-                                  </p>
+                            {order.items.map((item, idx) => {
+                              const reviewKey = `${order.id}-${item.product_id}`;
+                              const canReview = order.status === 'delivered' && reviewableProducts[reviewKey];
+                              
+                              return (
+                                <div key={idx} className="flex gap-4 p-3 bg-gray-50 rounded-lg">
+                                  <img
+                                    src={getImageUrl(item.product_image)}
+                                    alt={item.product_name}
+                                    className="w-20 h-20 object-cover rounded border"
+                                  />
+                                  <div className="flex-1">
+                                    <h5 className="font-medium text-gray-900">{item.product_name}</h5>
+                                    <p className="text-sm text-gray-600">Số lượng: {item.quantity}</p>
+                                    <p className="text-sm font-semibold text-primary-600 mt-1">
+                                      {formatPrice(typeof item.price === 'number' ? item.price * item.quantity : parseFloat(item.price as any) * item.quantity)}
+                                    </p>
+                                    
+                                    {/* Review Button for delivered orders */}
+                                    {canReview && (
+                                      <button
+                                        onClick={() => handleOpenReviewModal(item.product_id, item.product_name, order.id)}
+                                        className="mt-2 px-4 py-1.5 bg-yellow-500 text-white text-sm font-medium rounded-lg hover:bg-yellow-600 transition-colors flex items-center gap-1"
+                                      >
+                                        ⭐ Đánh giá sản phẩm
+                                      </button>
+                                    )}
+                                    
+                                    {order.status === 'delivered' && !canReview && reviewableProducts[reviewKey] !== undefined && (
+                                      <p className="mt-2 text-xs text-gray-500 italic">✓ Đã đánh giá</p>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       )}
@@ -509,6 +579,17 @@ export default function OrderListPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Review Modal */}
+      {showReviewModal && selectedProduct && (
+        <CreateReviewModal
+          productId={selectedProduct.productId}
+          orderId={selectedProduct.orderId}
+          productName={selectedProduct.productName}
+          onClose={handleCloseReviewModal}
+          onSuccess={handleReviewSuccess}
+        />
       )}
     </>
   );
