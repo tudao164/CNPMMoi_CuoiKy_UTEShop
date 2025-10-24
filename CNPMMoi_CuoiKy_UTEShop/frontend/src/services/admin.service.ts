@@ -266,6 +266,81 @@ export const adminOrderService = {
   },
 };
 
+// ============ ADMIN DASHBOARD ============
+export const adminDashboardService = {
+  // Get dashboard overview
+  getOverview: async (params?: { date_from?: string; date_to?: string }) => {
+    const response = await api.get<{
+      success: boolean;
+      data: any;
+    }>('/api/admin/dashboard/overview', { params });
+    return response.data;
+  },
+
+  // Get revenue chart data
+  getRevenueChart: async (params?: {
+    period?: 'hourly' | 'daily' | 'weekly' | 'monthly';
+    date_from?: string;
+    date_to?: string;
+  }) => {
+    const response = await api.get<{
+      success: boolean;
+      data: any;
+    }>('/api/admin/dashboard/revenue-chart', { params });
+    return response.data;
+  },
+
+  // Get top products
+  getTopProducts: async (params?: {
+    limit?: number;
+    date_from?: string;
+    date_to?: string;
+  }) => {
+    const response = await api.get<{
+      success: boolean;
+      data: any;
+    }>('/api/admin/dashboard/top-products', { params });
+    return response.data;
+  },
+
+  // Get delivered orders
+  getDeliveredOrders: async (params?: {
+    page?: number;
+    limit?: number;
+    date_from?: string;
+    date_to?: string;
+    payment_method?: string;
+  }) => {
+    const response = await api.get<{
+      success: boolean;
+      data: any;
+    }>('/api/admin/dashboard/delivered-orders', { params });
+    return response.data;
+  },
+
+  // Get cash flow
+  getCashFlow: async (params?: { date_from?: string; date_to?: string }) => {
+    const response = await api.get<{
+      success: boolean;
+      data: any;
+    }>('/api/admin/dashboard/cash-flow', { params });
+    return response.data;
+  },
+
+  // Get new customers
+  getNewCustomers: async (params?: {
+    page?: number;
+    limit?: number;
+    period?: number;
+  }) => {
+    const response = await api.get<{
+      success: boolean;
+      data: any;
+    }>('/api/admin/dashboard/new-customers', { params });
+    return response.data;
+  },
+};
+
 // ============ ADMIN COUPONS ============
 export const adminCouponService = {
   // Get all coupons
