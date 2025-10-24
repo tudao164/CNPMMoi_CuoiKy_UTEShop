@@ -70,26 +70,41 @@ export default function AdminOrderDetailPage() {
     }).format(amount);
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      new: 'blue',
-      confirmed: 'green',
-      preparing: 'yellow',
-      shipping: 'purple',
-      delivered: 'green',
-      cancelled: 'red',
-      cancel_requested: 'orange',
+  const getStatusBadge = (status: string) => {
+    const badges: Record<string, { label: string; className: string }> = {
+      new: { label: 'Mới', className: 'bg-blue-100 text-blue-800' },
+      confirmed: { label: 'Đã xác nhận', className: 'bg-green-100 text-green-800' },
+      preparing: { label: 'Đang chuẩn bị', className: 'bg-yellow-100 text-yellow-800' },
+      shipping: { label: 'Đang giao', className: 'bg-purple-100 text-purple-800' },
+      delivered: { label: 'Đã giao', className: 'bg-green-100 text-green-800' },
+      cancelled: { label: 'Đã hủy', className: 'bg-red-100 text-red-800' },
+      cancel_requested: { label: 'Yêu cầu hủy', className: 'bg-orange-100 text-orange-800' },
     };
-    return colors[status] || 'gray';
+    return badges[status] || { label: status, className: 'bg-gray-100 text-gray-800' };
   };
 
   const getAvailableStatuses = (currentStatus: string) => {
-    const transitions: Record<string, string[]> = {
-      new: ['confirmed', 'cancelled'],
-      confirmed: ['preparing', 'cancelled'],
-      preparing: ['shipping', 'cancelled'],
-      shipping: ['delivered', 'cancelled'],
-      cancel_requested: ['cancelled', 'confirmed'],
+    const transitions: Record<string, { value: string; label: string }[]> = {
+      new: [
+        { value: 'confirmed', label: 'Xác nhận' },
+        { value: 'cancelled', label: 'Hủy đơn' },
+      ],
+      confirmed: [
+        { value: 'preparing', label: 'Chuẩn bị hàng' },
+        { value: 'cancelled', label: 'Hủy đơn' },
+      ],
+      preparing: [
+        { value: 'shipping', label: 'Giao hàng' },
+        { value: 'cancelled', label: 'Hủy đơn' },
+      ],
+      shipping: [
+        { value: 'delivered', label: 'Đã giao' },
+        { value: 'cancelled', label: 'Hủy đơn' },
+      ],
+      cancel_requested: [
+        { value: 'cancelled', label: 'Chấp thuận hủy' },
+        { value: 'confirmed', label: 'Từ chối hủy' },
+      ],
     };
     return transitions[currentStatus] || [];
   };
@@ -147,9 +162,9 @@ export default function AdminOrderDetailPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-600">Trạng thái</p>
-                <p className={`font-semibold text-${getStatusColor(order.status)}-600`}>
-                  {order.status}
-                </p>
+                <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${getStatusBadge(order.status).className}`}>
+                  {getStatusBadge(order.status).label}
+                </span>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Thanh toán</p>
@@ -213,8 +228,12 @@ export default function AdminOrderDetailPage() {
               {order.history.map((item) => (
                 <div key={item.id} className="flex gap-4 p-4 border-l-4 border-primary-500 bg-gray-50">
                   <div className="flex-1">
-                    <p className="font-semibold text-gray-900">{item.status}</p>
-                    <p className="text-sm text-gray-600">{item.notes}</p>
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${getStatusBadge(item.status).className}`}>
+                        {getStatusBadge(item.status).label}
+                      </span>
+                    </div>
+                    {item.notes && <p className="text-sm text-gray-600 mt-1">{item.notes}</p>}
                     <p className="text-xs text-gray-500 mt-1">
                       {new Date(item.created_at).toLocaleString('vi-VN')}
                       {item.changed_by_name && ` - Bởi ${item.changed_by_name}`}
@@ -277,8 +296,8 @@ export default function AdminOrderDetailPage() {
                 >
                   <option value="">-- Chọn trạng thái --</option>
                   {getAvailableStatuses(order.status).map((status) => (
-                    <option key={status} value={status}>
-                      {status}
+                    <option key={status.value} value={status.value}>
+                      {status.label}
                     </option>
                   ))}
                 </select>
