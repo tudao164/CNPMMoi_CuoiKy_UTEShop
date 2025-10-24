@@ -459,6 +459,10 @@ CREATE TABLE product_reviews (
     INDEX idx_created_at (created_at)
 );
 
+ALTER TABLE product_reviews
+MODIFY COLUMN images VARCHAR(255);
+
+
 -- Review helpful votes table
 CREATE TABLE review_helpful (
     id INT PRIMARY KEY AUTO_INCREMENT,

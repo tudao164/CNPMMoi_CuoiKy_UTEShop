@@ -94,13 +94,24 @@ export default function Header() {
                   <span className="text-2xl">📦</span>
                 </button>
                 <button
+                  onClick={() => navigate('/my-reviews')}
+                  className="relative text-gray-700 hover:text-primary-600 p-2"
+                  title="Đánh giá của tôi"
+                >
+                  <span className="text-2xl">⭐</span>
+                </button>
+                <button
                   onClick={() => navigate('/profile')}
                   className="text-gray-700 hover:text-primary-600"
                 >
                   👤 {user.full_name}
                 </button>
-                <button onClick={handleLogout} className="btn-secondary">
-                  Đăng xuất
+                <button 
+                  onClick={handleLogout} 
+                  className="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg font-medium flex items-center gap-1.5"
+                >
+                  <span className="text-sm">🚪</span>
+                  <span>Đăng xuất</span>
                 </button>
               </>
             ) : (
